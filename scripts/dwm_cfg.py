@@ -55,4 +55,6 @@ if __name__ == "__main__":
             #setNodePose(loop, devs_found[anchor_name], pose)
         else:
             print(f'{anchor_name} not found')
+            #bytearray(b'\x00\x808\x01\x00\x808\x01\x00\x808\x01\x00d')
+            #[f'{i:02x}' for i in data]
             #['00', '80', '38', '01', '00', '80', '38', '01', '00', '80', '38', '01', '00', '64']
