@@ -1,0 +1,9 @@
+n_anchors: 4 
+anchor0_id: "DW4848"
+anchor1_id: "0x6842" 
+anchor2_id: "0x6842" 
+anchor3_id: "0x685C"
+anchor0_coordinates: "0, 0, 2890"
+anchor1_coordinates: "5295, 0, 620"
+anchor2_coordinates: "0, 9630, 2116" 
+anchor3_coordinates: "5295, 9377, 3191"
