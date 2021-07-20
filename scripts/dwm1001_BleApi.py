@@ -69,7 +69,8 @@ class BleConnectionHandler(object):
                 Returns
                 -------
                 """
-                msg_object.encodeBle()
+                if msg_object.is_data_ble_encoded == False:
+                        msg_object.encodeBle()
                 self.writeToDevice(address, msg_object.UUID, msg_object.data)
 
 class BleMsg(object):
