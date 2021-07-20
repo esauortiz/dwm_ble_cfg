@@ -73,11 +73,16 @@ class BleConnectionHandler(object):
                 self.writeToDevice(address, msg_object.UUID, msg_object.data)
 
 class BleMsg(object):
-        def __init__(self, api_command):
+        def __init__(self, api_command, data):
                 self.UUID  = api_command
-                self.data = []
+                self.data = data
+                self.is_data_ble_encoded = False
 
-        def encodeBle(self, data):
+        def setData(self, data):
+                self.data = data
+                self.is_data_ble_encoded = False
+
+        def encodeBle(self):
                 """ Encode BLE msg, bytes slots are encoded 
                 as little endian as BLE spec suggests.
                 Parameters
@@ -128,8 +133,7 @@ class PersistedPositionMsg(BleMsg):
                 data : (3,) array
                         x, y, z as signed int
                 """
-                BleMsg.__init__(self, DWM1001_BLE_API_COMMANDS.PERSISTED_POSITION)
-                self.data = data
+                BleMsg.__init__(self, DWM1001_BLE_API_COMMANDS.PERSISTED_POSITION, data)
 
         def encodeBle(self):
                 """ Encode BLE msg, bytes slots are encoded 
@@ -148,6 +152,7 @@ class PersistedPositionMsg(BleMsg):
                 # quality factor (1 byte, value 1 - 100 DEC)
                 result.append('64')
                 self.data = self.listToByteArray(result)
+                self.is_data_ble_encoded = True
 
 class OperationModeMsg(BleMsg):
         def __init__(self, data = None):
@@ -156,8 +161,7 @@ class OperationModeMsg(BleMsg):
                 ----------
                 data : dictionary
                 """
-                BleMsg.__init__(self, DWM1001_BLE_API_COMMANDS.OPERATION_MODE)
-                self.data = data
+                BleMsg.__init__(self, DWM1001_BLE_API_COMMANDS.OPERATION_MODE, data)
 
         def encodeBle(self):
                 """ Encode BLE msg, bytes slots are encoded 
@@ -167,8 +171,28 @@ class OperationModeMsg(BleMsg):
                 Returns
                 -------
                 """
-                # read 'data' dictionary to build msg
-                # 2 bytes non little endian see API documentation
+                result = []
+                first_byte = ''
+                first_byte += format(self.data['node_type'],'01b')
+                first_byte += format(self.data['UWB'],'02b')
+                first_byte += format(self.data['firmware'],'01b')
+                first_byte += format(self.data['accelerometer_enable'],'01b')
+                first_byte += format(self.data['LED_indication_enabled'],'01b')
+                first_byte += format(self.data['firmware_update_enable'],'01b')
+                first_byte += format(0,'01b')
+                # append just hex(byte) without '0x'
+                result.append(hex(int(first_byte, 2))[2:])
+
+                second_byte = ''
+                second_byte += format(self.data['initiator_enable'],'01b')
+                second_byte += format(self.data['low_power_mode_enable'],'01b')
+                second_byte += format(self.data['location_engine_enable'],'01b')
+                second_byte += format(0,'04b')
+                result.append(hex(int(second_byte, 2))[2:])
+
+                # 2 bytes non little endian, see API documentation
+                self.data = self.listToByteArray(result)
+                self.is_data_ble_encoded = True
 
         def decodeBle(self):
                 """ TODO decode msg
