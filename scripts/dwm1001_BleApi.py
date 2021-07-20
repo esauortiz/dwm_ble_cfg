@@ -187,7 +187,7 @@ class OperationModeMsg(BleMsg):
                 second_byte += format(self.data['initiator_enable'],'01b')
                 second_byte += format(self.data['low_power_mode_enable'],'01b')
                 second_byte += format(self.data['location_engine_enable'],'01b')
-                second_byte += format(0,'04b')
+                second_byte += format(0,'05b')
                 result.append(hex(int(second_byte, 2))[2:])
 
                 # 2 bytes non little endian, see API documentation
