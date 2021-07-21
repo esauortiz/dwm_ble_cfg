@@ -37,7 +37,7 @@ class BleConnectionHandler(object):
 
         def getDevices(self):
                 async def asyncGetDevices():
-                        print('Searching BT devices ...')
+                        print('Searching BT devices ...\n')
                         devices = await discover()
                         return devices
 
@@ -59,7 +59,7 @@ class BleConnectionHandler(object):
                                 await client.write_gatt_char(UUID, data)
                 self.loop.run_until_complete(asyncWriteToDevice(address, UUID, data))
 
-        def send(self, address, msg_object):
+        def send(self, address, msg_object, debug = False):
                 """ send message over BLE
                 Parameters
                 ----------
@@ -71,10 +71,26 @@ class BleConnectionHandler(object):
                 """
                 if msg_object.is_data_ble_encoded == False:
                         msg_object.encodeBle()
-                self.writeToDevice(address, msg_object.UUID, msg_object.data)
+                if debug == False:
+                        self.writeToDevice(address, msg_object.UUID, msg_object.data)
+                else:
+                        print(msg_object.data)
+
+        def read(self, address, msg_object):
+                """ read message over BLE
+                Parameters
+                ----------
+                msg_object : BleMsg
+                address: string
+                        BLE address
+                Returns
+                -------
+                """
+                # read returns raw bytearray, TODO: decode read data
+                return self.readFromDevice(address, msg_object.UUID)
 
 class BleMsg(object):
-        def __init__(self, api_command, data):
+        def __init__(self, api_command, data = None):
                 self.UUID  = api_command
                 self.data = data
                 self.is_data_ble_encoded = False
@@ -124,10 +140,10 @@ class BleMsg(object):
                 """
                 # flatten list
                 # list = [item for sublist in list for item in sublist]
-                return bytes.fromhex(''.join(list))
+                return bytearray(bytes.fromhex(''.join(list)))
 
 class PersistedPositionMsg(BleMsg):
-        def __init__(self, data):
+        def __init__(self, data = None):
                 """
                 Parameters
                 ----------
@@ -180,16 +196,16 @@ class OperationModeMsg(BleMsg):
                 first_byte += format(self.data['accelerometer_enable'],'01b')
                 first_byte += format(self.data['LED_indication_enabled'],'01b')
                 first_byte += format(self.data['firmware_update_enable'],'01b')
-                first_byte += format(0,'01b')
+                first_byte += format(1,'01b')
                 # append just hex(byte) without '0x'
-                result.append(hex(int(first_byte, 2))[2:])
+                result.append(format(int(first_byte, 2), '02x'))
 
                 second_byte = ''
                 second_byte += format(self.data['initiator_enable'],'01b')
                 second_byte += format(self.data['low_power_mode_enable'],'01b')
                 second_byte += format(self.data['location_engine_enable'],'01b')
                 second_byte += format(0,'05b')
-                result.append(hex(int(second_byte, 2))[2:])
+                result.append(format(int(second_byte, 2), '02x'))
 
                 # 2 bytes non little endian, see API documentation
                 self.data = self.listToByteArray(result)
