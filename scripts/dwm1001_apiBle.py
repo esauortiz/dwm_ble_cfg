@@ -76,7 +76,7 @@ class BleConnectionHandler(object):
                 else:
                         print(msg_object.data)
 
-        def read(self, address, msg_object):
+        def read(self, address, msg_object, debug = False):
                 """ read message over BLE
                 Parameters
                 ----------
@@ -87,7 +87,10 @@ class BleConnectionHandler(object):
                 -------
                 """
                 # read returns raw bytearray, TODO: decode read data
-                return self.readFromDevice(address, msg_object.UUID)
+                if debug == True:
+                        print(self.readFromDevice(address, msg_object.UUID))
+                else:
+                        return self.readFromDevice(address, msg_object.UUID)
 
 class BleMsg(object):
         def __init__(self, api_command, data = None):
@@ -208,6 +211,36 @@ class OperationModeMsg(BleMsg):
                 result.append(format(int(second_byte, 2), '02x'))
 
                 # 2 bytes non little endian, see API documentation
+                self.data = self.listToByteArray(result)
+                self.is_data_ble_encoded = True
+
+        def decodeBle(self):
+                """ TODO decode msg
+                Parameters
+                ----------
+                Returns
+                -------
+                """
+
+class NetworkIdMsg(BleMsg):
+        def __init__(self, data = None):
+                """
+                Parameters
+                ----------
+                data : 4 digits in hexadecimal 
+                """
+                BleMsg.__init__(self, DWM1001_BLE_API_COMMANDS.NETWORK_ID, data)
+
+        def encodeBle(self):
+                """ Encode BLE msg, bytes slots are encoded 
+                as little endian as BLE spec suggests.
+                Parameters
+                ----------
+                Returns
+                -------
+                """
+                # 2 bytes little endian, see API documentation
+                result = self.codeLittleEndian(self.data)
                 self.data = self.listToByteArray(result)
                 self.is_data_ble_encoded = True
 
