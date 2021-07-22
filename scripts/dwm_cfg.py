@@ -61,7 +61,6 @@ if __name__ == "__main__":
 
             print(f'Anchor {anchor_id} found. Do you want to configure it? (y/n)' )
             if input() == 'n':
-                print('\n')
                 continue
             anchor_pose = nodes_cfg[f'anchor{i}_coordinates'].split(', ')
 
