@@ -59,7 +59,10 @@ if __name__ == "__main__":
                 anchor_operation_mode['initiator_enable'] = 0 
                 str_is_initiator = ''
 
-            print(f'Anchor {anchor_id} found')
+            print(f'Anchor {anchor_id} found. Do you want to configure it? (y/n)' )
+            if input() == 'n':
+                print('\n')
+                continue
             anchor_pose = nodes_cfg[f'anchor{i}_coordinates'].split(', ')
 
             print(f'Setting anchor {anchor_id} network id to {network_id}')
