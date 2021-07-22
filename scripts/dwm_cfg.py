@@ -87,13 +87,15 @@ if __name__ == "__main__":
 
     # set tag operation mode
     if tag_id in devices_found_id:
-        print(f'Setting tag {tag_id} operation mode ...')
-        operation_mode_msg.setData(tag_operation_mode)
-        ble_handler.send(devices_found_id[tag_id], operation_mode_msg)
+        print(f'Tag {tag_id} found. Do you want to configure it? (y/n)' )
+        if input() == 'y':
+            print(f'Setting tag {tag_id} operation mode ...')
+            operation_mode_msg.setData(tag_operation_mode)
+            ble_handler.send(devices_found_id[tag_id], operation_mode_msg)
 
-        print(f'Found tag {tag_id} mode are set as follows:')
-        pprint(tag_operation_mode)
-        print("\n")
+            print(f'Found tag {tag_id} mode are set as follows:')
+            pprint(tag_operation_mode)
+            print("\n")
     else:
         print(f'Tag {tag_id} not found\n')
 
