@@ -61,6 +61,7 @@ if __name__ == "__main__":
 
             print(f'Anchor {anchor_id} found. Do you want to configure it? (y/n)' )
             if input() == 'n':
+                print('\n')
                 continue
             anchor_pose = nodes_cfg[f'anchor{i}_coordinates'].split(', ')
 
@@ -75,11 +76,8 @@ if __name__ == "__main__":
             anchor_pose_msg.setData(anchor_pose)
             ble_handler.send(devices_found_id[anchor_id], anchor_pose_msg)
         else:
-            print(f'{anchor_id} not found')
-    
-        print("\n")
-        
-
+            print(f'{anchor_id} not found\n')
+   
     print("Found anchors's mode are set as follows:")
     pprint(anchor_operation_mode)
     print("\n")
@@ -94,7 +92,7 @@ if __name__ == "__main__":
 
             print(f'Found tag {tag_id} mode are set as follows:')
             pprint(tag_operation_mode)
-            print("\n")
+        print("\n")
     else:
         print(f'Tag {tag_id} not found\n')
 
