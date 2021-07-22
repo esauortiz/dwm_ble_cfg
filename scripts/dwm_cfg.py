@@ -72,7 +72,7 @@ if __name__ == "__main__":
             operation_mode_msg.setData(anchor_operation_mode)
             ble_handler.send(devices_found_id[anchor_id], operation_mode_msg)
 
-            print(f'Setting anchor {anchor_id} pose to [X: {anchor_pose[0]} Y: {anchor_pose[1]} Z: {anchor_pose[2]}] ...')
+            print(f'Setting anchor {anchor_id} pose to [X: {anchor_pose[0]} Y: {anchor_pose[1]} Z: {anchor_pose[2]}] ...\n')
             anchor_pose_msg.setData(anchor_pose)
             ble_handler.send(devices_found_id[anchor_id], anchor_pose_msg)
         else:
