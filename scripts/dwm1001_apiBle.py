@@ -74,7 +74,7 @@ class BleConnectionHandler(object):
                 if debug == False:
                         success = False
                         n_attempts = 0
-                        while success == False or n_attempts < 10:
+                        while success == False and n_attempts < 10:
                                 try:
                                         self.writeToDevice(address, msg_object.UUID, msg_object.data)
                                         success = True
