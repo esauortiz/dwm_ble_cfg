@@ -72,7 +72,14 @@ class BleConnectionHandler(object):
                 if msg_object.is_data_ble_encoded == False:
                         msg_object.encodeBle()
                 if debug == False:
-                        self.writeToDevice(address, msg_object.UUID, msg_object.data)
+                        success = False
+                        while success == False:
+                                try:
+                                        self.writeToDevice(address, msg_object.UUID, msg_object.data)
+                                        success = True
+                                except:
+                                        print('Connection failed. Retrying ...')
+
                 else:
                         print(msg_object.data)
 
