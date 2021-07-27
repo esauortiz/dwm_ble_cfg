@@ -224,7 +224,7 @@ class OperationModeMsg(BleMsg):
                 self.is_data_ble_encoded = True
 
         def decodeBle(self):
-                """ TODO decode msg
+                """ Decode BLE msg
                 Parameters
                 ----------
                 Returns
@@ -254,7 +254,51 @@ class NetworkIdMsg(BleMsg):
                 self.is_data_ble_encoded = True
 
         def decodeBle(self):
-                """ TODO decode msg
+                """ Decode BLE msg
+                Parameters
+                ----------
+                Returns
+                -------
+                """
+
+class LocationDataModeMsg(BleMsg):
+        def __init__(self, data = None):
+                """
+                Parameters
+                ----------
+                data : 4 digits in hexadecimal 
+                """
+                BleMsg.__init__(self, DWM1001_BLE_API_COMMANDS.LOCATION_DATA_MODE, data)
+
+        def encodeBle(self):
+                """ Encode BLE msg
+                Parameters
+                ----------
+                Returns
+                -------
+                """
+                self.data = format(self.data,'01x')
+                self.is_data_ble_encoded = True
+
+        def decodeBle(self):
+                """ Decode BLE msg
+                Parameters
+                ----------
+                Returns
+                -------
+                """
+
+class LocationDataMsg(BleMsg):
+        def __init__(self, data = None):
+                """
+                Parameters
+                ----------
+                data : 4 digits in hexadecimal 
+                """
+                BleMsg.__init__(self, DWM1001_BLE_API_COMMANDS.LOCATION_DATA, data)
+
+        def decodeBle(self):
+                """ Decode BLE msg
                 Parameters
                 ----------
                 Returns
