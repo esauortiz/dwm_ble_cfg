@@ -67,10 +67,13 @@ if __name__ == "__main__":
     # set anchor pose and operation mode
     for i in range(n_anchors):
         anchor_id = nodes_cfg[f'anchor{i}_id']
-        anchor_address = devices_found_id[anchor_id]
         if anchor_id in devices_found_id and anchor_id == initiator_id:
+            print('Anchor {anchor_id} found as initiator')
+            anchor_address = devices_found_id[anchor_id]
+            print('Sending location data mode')
             location_data_mode_msg = LocationDataModeMsg(1) # 'distances' type
             ble_handler.send(anchor_address, location_data_mode_msg)
+            print('Reading location data')
             location_data_msg = LocationDataMsg()
             ble_handler.read(anchor_address, location_data_msg, debug=True)
 
