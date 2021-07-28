@@ -64,67 +64,53 @@ if __name__ == "__main__":
     operation_mode_msg = OperationModeMsg()
     network_id_msg = NetworkIdMsg(network_id)
 
-    # set anchor pose and operation mode
     for i in range(n_anchors):
         anchor_id = nodes_cfg[f'anchor{i}_id']
-        if anchor_id in devices_found_id and anchor_id == initiator_id:
-            print('Anchor {anchor_id} found as initiator')
-            anchor_address = devices_found_id[anchor_id]
-            print('Sending location data mode')
-            location_data_mode_msg = LocationDataModeMsg(1) # 'distances' type
-            ble_handler.send(anchor_address, location_data_mode_msg)
-            print('Reading location data')
-            location_data_msg = LocationDataMsg()
-            ble_handler.read(anchor_address, location_data_msg, debug=True)
-
-    if False:
-        for i in range(n_anchors):
-            anchor_id = nodes_cfg[f'anchor{i}_id']
-            anchor_address = devices_found_id[anchor_id]
-            if anchor_id in devices_found_id:
-                if anchor_id == initiator_id:
-                    anchor_operation_mode['initiator_enable'] = 1
-                    str_is_initiator = ' as initiator'
-                else:
-                    anchor_operation_mode['initiator_enable'] = 0 
-                    str_is_initiator = ''
-
-                print(f'Anchor {anchor_id} found. Do you want to configure it? (y/n)' )
-                if input() == 'n':
-                    print('\n')
-                    continue
-                anchor_pose = nodes_cfg[f'anchor{i}_coordinates'].split(', ')
-
-                print(f'Setting anchor {anchor_id} network id to {network_id}')
-                ble_handler.send(anchor_address, network_id_msg)
-
-                print(f'Setting anchor {anchor_id} operation mode' + str_is_initiator + ' ...')
-                operation_mode_msg.setData(anchor_operation_mode)
-                ble_handler.send(anchor_address, operation_mode_msg)
-
-                print(f'Setting anchor {anchor_id} pose to [X: {anchor_pose[0]} Y: {anchor_pose[1]} Z: {anchor_pose[2]}] ...\n')
-                anchor_pose_msg.setData(anchor_pose)
-                ble_handler.send(anchor_address, anchor_pose_msg)
+        anchor_address = devices_found_id[anchor_id]
+        if anchor_id in devices_found_id:
+            if anchor_id == initiator_id:
+                anchor_operation_mode['initiator_enable'] = 1
+                str_is_initiator = ' as initiator'
             else:
-                print(f'{anchor_id} not found\n')
-    
-        print("Found anchors's mode are set as follows:")
-        pprint(anchor_operation_mode)
-        print("\n")
+                anchor_operation_mode['initiator_enable'] = 0 
+                str_is_initiator = ''
 
-        # set tag operation mode
-        if tag_id in devices_found_id:
-            tag_address = devices_found_id[tag_id]
-            print(f'Tag {tag_id} found. Do you want to configure it? (y/n)' )
-            if input() == 'y':
-                print(f'Setting tag {tag_id} operation mode ...')
-                operation_mode_msg.setData(tag_operation_mode)
-                ble_handler.send(tag_address, operation_mode_msg)
+            print(f'Anchor {anchor_id} found. Do you want to configure it? (y/n)' )
+            if input() == 'n':
+                print('\n')
+                continue
+            anchor_pose = nodes_cfg[f'anchor{i}_coordinates'].split(', ')
 
-                print(f'Found tag {tag_id} mode are set as follows:')
-                pprint(tag_operation_mode)
-            print("\n")
+            print(f'Setting anchor {anchor_id} network id to {network_id}')
+            ble_handler.send(anchor_address, network_id_msg)
+
+            print(f'Setting anchor {anchor_id} operation mode' + str_is_initiator + ' ...')
+            operation_mode_msg.setData(anchor_operation_mode)
+            ble_handler.send(anchor_address, operation_mode_msg)
+
+            print(f'Setting anchor {anchor_id} pose to [X: {anchor_pose[0]} Y: {anchor_pose[1]} Z: {anchor_pose[2]}] ...\n')
+            anchor_pose_msg.setData(anchor_pose)
+            ble_handler.send(anchor_address, anchor_pose_msg)
         else:
-            print(f'Tag {tag_id} not found\n')
+            print(f'{anchor_id} not found\n')
 
-        print('Configuration finished')
+    print("Found anchors's mode are set as follows:")
+    pprint(anchor_operation_mode)
+    print("\n")
+
+    # set tag operation mode
+    if tag_id in devices_found_id:
+        tag_address = devices_found_id[tag_id]
+        print(f'Tag {tag_id} found. Do you want to configure it? (y/n)' )
+        if input() == 'y':
+            print(f'Setting tag {tag_id} operation mode ...')
+            operation_mode_msg.setData(tag_operation_mode)
+            ble_handler.send(tag_address, operation_mode_msg)
+
+            print(f'Found tag {tag_id} mode are set as follows:')
+            pprint(tag_operation_mode)
+        print("\n")
+    else:
+        print(f'Tag {tag_id} not found\n')
+
+    print('Configuration finished')
