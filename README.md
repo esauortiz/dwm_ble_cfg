@@ -23,8 +23,8 @@ python dwm_cfg.py
 ### Custom configuration
 This example uses already implemented ```PersistedPositionMsg``` class to set anchor position.
 ```python
-from dwm1001_BleApi import BleConnectionHandler
-from dwm1001_BleApi import PersistedPositionMsg
+from dwm1001_apiBle import BleConnectionHandler
+from dwm1001_apiBle import PersistedPositionMsg
 
 # BLE connection handler
 ble_handler = BleConnectionHandler()
