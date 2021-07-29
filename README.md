@@ -4,13 +4,13 @@ This repository provides useful classes to both send and receive data through BL
 
 ## Installation
 
-Copy this repository.
- 
+This repository is a submodule of the main repository [dwm1001_drivers](https://github.com/esauortiz/dwm1001_drivers.git). In order to load correctly ```.yaml``` parameters files the main repository has to be installed.
+
 ```bash
-git clone https://github.com/esauortiz/dwm_ble_cfg.git
+git clone https://github.com/esauortiz/dwm1001_drivers.git
 ```
 
-Install requirements .
+This submodule depends on some python libraries.
 ```bash
 pip install -r requirements.txt
 ```
