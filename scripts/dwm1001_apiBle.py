@@ -1,6 +1,12 @@
 #!/usr/bin python3.6
 
-""" For more info on the documentation go to https://www.decawave.com/sites/default/files/dwm1001-api-guide.pdf
+"""
+@file: dmw1001_apiBle.py
+@description: python module to send and retrieved data to tag and anchors
+              using BLE API from https://www.decawave.com/dwm1001/api/
+@author: Esau Ortiz
+@date: july 2021
+@more: For more info on the documentation go to https://www.decawave.com/sites/default/files/dwm1001-api-guide.pdf
 """
 import asyncio
 from bitstring import Bits
