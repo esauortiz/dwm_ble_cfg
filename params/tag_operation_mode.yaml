@@ -4,6 +4,6 @@ firmware: 1
 accelerometer_enable: 0
 LED_indication_enabled: 1
 firmware_update_enable: 0
-initiator_enable: 0
+initiator_enable: 1
 low_power_mode_enable: 0
 location_engine_enable: 0
