@@ -1,6 +1,12 @@
 #!/usr/bin python3.6
 
-""" For more info on the documentation go to https://www.decawave.com/sites/default/files/dwm1001-api-guide.pdf
+"""
+@file: dmw1001_apiBle.py
+@description: python module to send and retrieved data to tag and anchors
+              using BLE API from https://www.decawave.com/dwm1001/api/
+@author: Esau Ortiz
+@date: july 2021
+@more: For more info on the documentation go to https://www.decawave.com/sites/default/files/dwm1001-api-guide.pdf
 """
 import asyncio
 from bitstring import Bits
@@ -37,7 +43,7 @@ class BleConnectionHandler(object):
 
         def getDevices(self):
                 async def asyncGetDevices():
-                        print('Searching BT devices ...')
+                        print('Searching BT devices ...\n')
                         devices = await discover()
                         return devices
 
@@ -59,7 +65,7 @@ class BleConnectionHandler(object):
                                 await client.write_gatt_char(UUID, data)
                 self.loop.run_until_complete(asyncWriteToDevice(address, UUID, data))
 
-        def send(self, address, msg_object):
+        def send(self, address, msg_object, debug = False):
                 """ send message over BLE
                 Parameters
                 ----------
@@ -71,10 +77,38 @@ class BleConnectionHandler(object):
                 """
                 if msg_object.is_data_ble_encoded == False:
                         msg_object.encodeBle()
-                self.writeToDevice(address, msg_object.UUID, msg_object.data)
+                if debug == False:
+                        success = False
+                        n_attempts = 0
+                        while success == False and n_attempts < 10:
+                                try:
+                                        self.writeToDevice(address, msg_object.UUID, msg_object.data)
+                                        success = True
+                                except:
+                                        print('Connection failed. Retrying ...')
+                                        n_attempts += 1
+
+                else:
+                        print(msg_object.data)
+
+        def read(self, address, msg_object, debug = False):
+                """ read message over BLE
+                Parameters
+                ----------
+                msg_object : BleMsg
+                address: string
+                        BLE address
+                Returns
+                -------
+                """
+                # read returns raw bytearray, TODO: decode read data
+                if debug == True:
+                        print(self.readFromDevice(address, msg_object.UUID))
+                else:
+                        return self.readFromDevice(address, msg_object.UUID)
 
 class BleMsg(object):
-        def __init__(self, api_command, data):
+        def __init__(self, api_command, data = None):
                 self.UUID  = api_command
                 self.data = data
                 self.is_data_ble_encoded = False
@@ -124,10 +158,10 @@ class BleMsg(object):
                 """
                 # flatten list
                 # list = [item for sublist in list for item in sublist]
-                return bytes.fromhex(''.join(list))
+                return bytearray(bytes.fromhex(''.join(list)))
 
 class PersistedPositionMsg(BleMsg):
-        def __init__(self, data):
+        def __init__(self, data = None):
                 """
                 Parameters
                 ----------
@@ -180,23 +214,97 @@ class OperationModeMsg(BleMsg):
                 first_byte += format(self.data['accelerometer_enable'],'01b')
                 first_byte += format(self.data['LED_indication_enabled'],'01b')
                 first_byte += format(self.data['firmware_update_enable'],'01b')
-                first_byte += format(0,'01b')
+                first_byte += format(1,'01b')
                 # append just hex(byte) without '0x'
-                result.append(hex(int(first_byte, 2))[2:])
+                result.append(format(int(first_byte, 2), '02x'))
 
                 second_byte = ''
                 second_byte += format(self.data['initiator_enable'],'01b')
                 second_byte += format(self.data['low_power_mode_enable'],'01b')
                 second_byte += format(self.data['location_engine_enable'],'01b')
                 second_byte += format(0,'05b')
-                result.append(hex(int(second_byte, 2))[2:])
+                result.append(format(int(second_byte, 2), '02x'))
 
                 # 2 bytes non little endian, see API documentation
                 self.data = self.listToByteArray(result)
                 self.is_data_ble_encoded = True
 
         def decodeBle(self):
-                """ TODO decode msg
+                """ Decode BLE msg
+                Parameters
+                ----------
+                Returns
+                -------
+                """
+
+class NetworkIdMsg(BleMsg):
+        def __init__(self, data = None):
+                """
+                Parameters
+                ----------
+                data : 4 digits in hexadecimal 
+                """
+                BleMsg.__init__(self, DWM1001_BLE_API_COMMANDS.NETWORK_ID, data)
+
+        def encodeBle(self):
+                """ Encode BLE msg, bytes slots are encoded 
+                as little endian as BLE spec suggests.
+                Parameters
+                ----------
+                Returns
+                -------
+                """
+                # 2 bytes little endian, see API documentation
+                result = self.codeLittleEndian(self.data)
+                self.data = self.listToByteArray(result)
+                self.is_data_ble_encoded = True
+
+        def decodeBle(self):
+                """ Decode BLE msg
+                Parameters
+                ----------
+                Returns
+                -------
+                """
+
+class LocationDataModeMsg(BleMsg):
+        def __init__(self, data = None):
+                """
+                Parameters
+                ----------
+                data : 4 digits in hexadecimal 
+                """
+                BleMsg.__init__(self, DWM1001_BLE_API_COMMANDS.LOCATION_DATA_MODE, data)
+
+        def encodeBle(self):
+                """ Encode BLE msg
+                Parameters
+                ----------
+                Returns
+                -------
+                """
+                self.data = format(self.data,'01x')
+                self.is_data_ble_encoded = True
+
+        def decodeBle(self):
+                """ Decode BLE msg
+                Parameters
+                ----------
+                Returns
+                -------
+                """
+
+class LocationDataMsg(BleMsg):
+        def __init__(self, data = None):
+                """
+                Parameters
+                ----------
+                data : 4 digits in hexadecimal 
+                """
+                BleMsg.__init__(self, DWM1001_BLE_API_COMMANDS.LOCATION_DATA, data)
+
+        def decodeBle(self):
+                """ Decode BLE msg
                 Parameters
                 ----------
                 Returns
