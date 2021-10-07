@@ -101,11 +101,13 @@ class BleConnectionHandler(object):
                 Returns
                 -------
                 """
+                data = self.readFromDevice(address, msg_object.UUID)
                 # read returns raw bytearray, TODO: decode read data
                 if debug == True:
-                        print(self.readFromDevice(address, msg_object.UUID))
+                        print(f'data with length: {len(data)}')
+                        print(data.hex())
                 else:
-                        return self.readFromDevice(address, msg_object.UUID)
+                        return data
 
 class BleMsg(object):
         def __init__(self, api_command, data = None):
