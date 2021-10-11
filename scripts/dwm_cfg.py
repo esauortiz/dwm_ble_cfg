@@ -66,7 +66,11 @@ if __name__ == "__main__":
 
     for i in range(n_anchors):
         anchor_id = nodes_cfg[f'anchor{i}_id']
-        anchor_address = devices_found_id[anchor_id]
+        try:
+            anchor_address = devices_found_id[anchor_id]
+        except KeyError:
+            print(f'Anchor {anchor_id} not found')
+            continue
         if anchor_id in devices_found_id:
             if anchor_id == initiator_id:
                 anchor_operation_mode['initiator_enable'] = 1
