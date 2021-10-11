@@ -285,7 +285,8 @@ class LocationDataModeMsg(BleMsg):
                 Returns
                 -------
                 """
-                self.data = format(self.data,'01x')
+                result = (format(self.data, '02x'))
+                self.data = self.listToByteArray(result)
                 self.is_data_ble_encoded = True
 
         def decodeBle(self):
