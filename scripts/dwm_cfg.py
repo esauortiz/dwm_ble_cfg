@@ -83,7 +83,7 @@ if __name__ == "__main__":
             if input() == 'n':
                 print('\n')
                 continue
-            anchor_pose = nodes_cfg[f'anchor{i}_coordinates'].split(', ')
+            anchor_pose = nodes_cfg[f'anchor{i}_coordinates']
 
             print(f'Setting anchor {anchor_id} network id to {network_id}')
             ble_handler.send(anchor_address, network_id_msg)
