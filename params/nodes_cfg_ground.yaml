@@ -2,7 +2,7 @@ world_frame_id: "world"
 network_id: "0x11a7"
 tag0_id: "DW02D6"
 tag1_id: "DW482E"
-n_anchors: 8
+n_anchors: 10
 initiator_id: "DW4848"
 anchor0_id: "DW4848"
 anchor1_id: "DW1632" 
