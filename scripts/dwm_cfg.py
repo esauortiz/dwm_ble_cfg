@@ -51,7 +51,7 @@ if __name__ == "__main__":
 
     # set some node variables
     network_id = nodes_cfg['network_id']
-    tag_id = nodes_cfg['tag_id']
+    tag_id = nodes_cfg['tag0_id']
     n_anchors = nodes_cfg['n_anchors']
     anchors_expected_id = []
     for i in range(n_anchors):
