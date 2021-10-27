@@ -43,11 +43,11 @@ if __name__ == "__main__":
     except:
         nodes_cfg_description = 'default'
     # load anchors cfg
-    nodes_cfg = readYaml(expanduser("~") + "/catkin_ws/src/dwm1001_drivers/dwm_ble_cfg/params/nodes_cfg_" + nodes_cfg_description + ".yaml")
+    nodes_cfg = readYaml(expanduser("~") + "/catkin_ws/src/dwm1001_drivers/params/nodes_cfg/" + nodes_cfg_description + ".yaml")
     # load anchors operation mode
-    anchor_operation_mode = readYaml(expanduser("~") + "/catkin_ws/src/dwm1001_drivers/dwm_ble_cfg/params/anchor_operation_mode.yaml")
+    anchor_operation_mode = readYaml(expanduser("~") + "/catkin_ws/src/dwm1001_drivers/params/anchor_operation_mode.yaml")
     # load tag operation mode
-    tag_operation_mode = readYaml(expanduser("~") + "/catkin_ws/src/dwm1001_drivers/dwm_ble_cfg/params/tag_operation_mode.yaml")
+    tag_operation_mode = readYaml(expanduser("~") + "/catkin_ws/src/dwm1001_drivers/params/tag_operation_mode.yaml")
 
     # set some node variables
     network_id = nodes_cfg['network_id']
