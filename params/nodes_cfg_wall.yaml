@@ -1,5 +1,6 @@
 world_frame_id: "world"
-network_id: "0x11a7"
+network0_id: "0x11a7"
+network1_id: "0x5b1c"
 tag0_id: "DW02D6"
 tag1_id: "DW482E"
 n_anchors: 10
