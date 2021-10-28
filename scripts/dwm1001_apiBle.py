@@ -65,7 +65,7 @@ class BleConnectionHandler(object):
                                 await client.write_gatt_char(UUID, data)
                 self.loop.run_until_complete(asyncWriteToDevice(address, UUID, data))
 
-        def send(self, address, msg_object, debug = False):
+        def send(self, address, msg_object, verbose = False):
                 """ send message over BLE
                 Parameters
                 ----------
@@ -77,7 +77,9 @@ class BleConnectionHandler(object):
                 """
                 if msg_object.is_data_ble_encoded == False:
                         msg_object.encodeBle()
-                if debug == False:
+                if verbose:
+                        print(msg_object.data)
+                else:
                         success = False
                         n_attempts = 0
                         while success == False and n_attempts < 10:
@@ -88,10 +90,8 @@ class BleConnectionHandler(object):
                                         print('Connection failed. Retrying ...')
                                         n_attempts += 1
 
-                else:
-                        print(msg_object.data)
 
-        def read(self, address, msg_object, debug = False):
+        def read(self, address, msg_object, verbose = False, decode_msg = False):
                 """ read message over BLE
                 Parameters
                 ----------
@@ -103,7 +103,7 @@ class BleConnectionHandler(object):
                 """
                 data = self.readFromDevice(address, msg_object.UUID)
                 # read returns raw bytearray, TODO: decode read data
-                if debug == True:
+                if verbose:
                         print(f'data with length: {len(data)}')
                         print(data.hex())
                 else:
