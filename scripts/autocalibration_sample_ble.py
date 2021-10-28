@@ -14,13 +14,14 @@
                 <n_samples> samples to save when retrieving ranges
 """
 
-import yaml
-import sys
-import bleak
 from pathlib import Path
 from dwm1001_apiBle import BleConnectionHandler
 from dwm1001_apiBle import OperationModeMsg, NetworkIdMsg
 from dwm1001_apiBle import LocationDataMsg, LocationDataModeMsg
+import yaml
+import sys
+import bleak
+import numpy as np
 
 def readYaml(file):
     with open(file, 'r') as stream:
@@ -61,6 +62,9 @@ def main():
         anchor_id_list_by_network.append(anchors_in_network_list)
         anchor_id_list += anchors_in_network_list
 
+    # matrix to save ranging samples
+    n_total_anchors = len(anchor_id_list)
+    ranging_data = -np.ones((n_samples, n_total_anchors), dtype = float)
 
     # BLE connection handler
     ble_handler = BleConnectionHandler()
@@ -98,14 +102,20 @@ def main():
         ble_handler.send(anchor_address, network_id_msg)
 
         # read ranges
-        for i in range(n_samples):
+        for sample_idx in range(n_samples):
             print(f'Retrieving ranges')
             try:
-                ranges = ble_handler.read(anchor_address, location_data_msg, verbose=False, decode_msg=True)
-                print(ranges)
+                location_data = ble_handler.read(anchor_address, location_data_msg, verbose=False, decode_msg=True)
+                if location_data is not None:
+                    for anchor in location_data:
+                        row_idx = anchor_id_list.index(anchor)
+                        col_idx = sample_idx
+                        ranging_data[row_idx, col_idx] = location_data[anchor]
             except bleak.exc.BleakDBusError:
                 print(f'Connection failed. Retrying ... ')
     
+    np.savetxt(f'{target_dwm_module}_ranging_data.txt', ranging_data)
+
     # back to anchor
     anchor_operation_mode['initiator_enable'] = 1
     network_id = None
