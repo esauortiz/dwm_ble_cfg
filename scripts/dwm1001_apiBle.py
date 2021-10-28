@@ -328,5 +328,5 @@ class LocationDataMsg(BleMsg):
                                 anchor_id =  encoded_data[6 + offset:8 + offset] + encoded_data[4 + offset:6 + offset]
                                 hex_distance = encoded_data[14 + offset:16 + offset] + encoded_data[12 + offset:14 + offset] + encoded_data[10 + offset:12 + offset] + encoded_data[8 + offset:10 + offset]
                                 distance = int('0x' + hex_distance, base=16)
-                                decoded_data[anchor_id] = distance
+                                decoded_data[anchor_id.upper()] = distance / 1000.0 # to meters
                         return decoded_data
