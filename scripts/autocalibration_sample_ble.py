@@ -101,7 +101,8 @@ def main():
         for i in range(n_samples):
             print(f'Retrieving ranges')
             try:
-                ranges = ble_handler.read(anchor_address, location_data_msg, verbose=True, decode_msg=True)
+                ranges = ble_handler.read(anchor_address, location_data_msg, verbose=False, decode_msg=True)
+                print(ranges)
             except bleak.exc.BleakDBusError:
                 print(f'Connection failed. Retrying ... ')
     
