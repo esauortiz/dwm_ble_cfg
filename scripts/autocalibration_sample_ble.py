@@ -7,6 +7,7 @@
 @author: Esau Ortiz
 @date: october 2021
 @usage: python autocalibration_sample_ble.py <module> <nodes_configuration_label> <n_samples>
+
         # where <module> is the module id with DW1234 format
                 <nodes_configuration_label> is a yaml file which includes nets, 
                 tag ids, anchor ids and anchor coords
@@ -35,7 +36,7 @@ def main():
     try: nodes_configuration_label = sys.argv[2]
     except: nodes_configuration_label = 'default'
     # load nodes configuration label
-    try: n_samples = sys.argv[2]
+    try: n_samples = int(sys.argv[2])
     except: n_samples = 10
 
     # load anchors cfg
