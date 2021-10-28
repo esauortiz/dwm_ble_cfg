@@ -108,7 +108,7 @@ def main():
                 location_data = ble_handler.read(anchor_address, location_data_msg, verbose=False, decode_msg=True)
                 if location_data is not None:
                     for anchor in location_data:
-                        row_idx = anchor_id_list.index(anchor)
+                        row_idx = anchor_id_list.index('DW' + anchor)
                         col_idx = sample_idx
                         ranging_data[row_idx, col_idx] = location_data[anchor]
             except bleak.exc.BleakDBusError:
