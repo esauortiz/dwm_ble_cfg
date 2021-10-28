@@ -106,9 +106,10 @@ class BleConnectionHandler(object):
                 if verbose:
                         print(f'data with length: {len(data)}')
                         print(data.hex())
+                elif decode_msg:
+                        return msg_object.decodeBle(data)
                 else:
                         return data
-
 class BleMsg(object):
         def __init__(self, api_command, data = None):
                 self.UUID  = api_command
@@ -306,10 +307,26 @@ class LocationDataMsg(BleMsg):
                 """
                 BleMsg.__init__(self, DWM1001_BLE_API_COMMANDS.LOCATION_DATA, data)
 
-        def decodeBle(self):
+        def decodeBle(self, encoded_data):
                 """ Decode BLE msg
                 Parameters
                 ----------
+                encoded_data: bytearray
                 Returns
                 -------
+                decoded_data: dictionary of {anchor: distance}
                 """
+                # ensure distances mode (i.e. only anchors' ranges are received)
+                encoded_data = encoded_data.hex()
+                if encoded_data[:2] != '01':
+                        return None
+                else:
+                        decoded_data = {}
+                        n_anchors = int(encoded_data[3])
+                        for i in range(n_anchors):
+                                offset = i * 14 # each anchor data is 14 bytes long
+                                anchor_id =  encoded_data[6 + offset:8 + offset] + encoded_data[4 + offset:6 + offset]
+                                hex_distance = encoded_data[14 + offset:16 + offset] + encoded_data[12 + offset:14 + offset] + encoded_data[10 + offset:12 + offset] + encoded_data[8 + offset:10 + offset]
+                                distance = int('0x' + hex_distance, base=16)
+                                decoded_data[anchor_id] = distance
+                        return decoded_data
