@@ -10,6 +10,8 @@
 
 import matplotlib.pyplot as plt
 import numpy as np
+import sys, yaml
+from pathlib import Path
 
 def rotate_points(points, pitch = 0, roll = 0, yaw = 0):
     n_points = points.shape[0]
@@ -52,7 +54,7 @@ def angle_bet_vectors(vector_1, vector_2):
     dot_product = np.dot(unit_vector_1, unit_vector_2)
     return np.arccos(dot_product)
 
-def normL2(P, Q, params = None):
+def normL2(P, Q):
     """ Compute the euclidean distance bet two matrices
     Parameters
     ----------
@@ -80,84 +82,108 @@ def optimizedTagCoords(anchors_coords, anchors_distances):
 
         return np.dot(np.linalg.pinv(A), B)    
 
+def readYaml(file):
+    with open(file, 'r') as stream:
+        try:
+            return yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
+
 def main():
 
-    MAX_ITERS = 2500
-    TERMINATION_THRESH = 0.001
-    PATH_TO_DATA = '/media/esau/hdd_at_ubuntu/autocalibration_ranges'
+    # load nodes configuration label
+    try: nodes_configuration_label = sys.argv[1]
+    except: nodes_configuration_label = 'default'
+
+    MAX_ITERS = 100
+    TERMINATION_THRESH = 0.1
+    PATH_TO_DATA = '/home/esau/catkin_ws/src/uwb_pkgs/dwm1001_drivers'
+
+    # load anchors cfg
+    current_path = Path(__file__).parent.resolve()
+    dwm1001_drivers_path = str(current_path.parent.parent)
+    nodes_cfg = readYaml(dwm1001_drivers_path + "/params/nodes_cfg/" + nodes_configuration_label + ".yaml")
+
+    # set some node variables
+    n_networks = nodes_cfg['n_networks']
+    anchor_id_list = [] # single level list
+    anchor_coords_list = []
+    for i in range(n_networks):
+        network_cfg = nodes_cfg['network' + str(i)]
+        n_anchors = network_cfg['n_anchors']
+        anchors_in_network_list = [network_cfg['anchor' + str(i) + '_id'] for i in range(n_anchors)]
+        anchors_coords_in_network_list = [network_cfg['anchor' + str(i) + '_coordinates'] for i in range(n_anchors)]
+        anchor_id_list += anchors_in_network_list
+        anchor_coords_list = anchor_coords_list + anchors_coords_in_network_list
 
     # retrieve from list of anchors from nodes cfg
-    anchor_id_list = ['009A', '4984', '2D9C', '4806', '4848', '4814', '47FC', '43EB', '0038', '1632']
     data = []
     for anchor_id in anchor_id_list:
-        anchor_data = np.loadtxt(PATH_TO_DATA + 'DW' + anchor_id + '_ranging_data.txt')
+        anchor_data = np.loadtxt(PATH_TO_DATA + '/' + anchor_id + '_ranging_data.txt')
         data.append(anchor_data)
-    n_anchors, n_samples = data[0].shape
+    n_samples, n_anchors = data[0].shape
 
-    # initial guess (manually)
-    anchors_coords_array = np.array([ [0.0, 0.0, 0.0],
-                                [0.0, 1.2, 0.0],
-                                [0.0, 2.4, 0.0],
-                                [0.0, 3.6, 0.0],
-                                [1.0, 1.0, 0.0],
-                                [1.0, 2.0, 0.0],
-                                [2.0, 0.0, 0.0],
-                                [2.0, 1.0, 0.0],
-                                [2.0, 2.0, 0.0],
-                                [2.4, 3.6, 0.0]])
-
+    """
+    for ranges, anchor_id in zip(data[4].T, anchor_id_list):
+        print(anchor_id)
+        ranges = ranges[ranges > 0]
+        if len(ranges) == 0: continue
+        print(np.std(ranges))
+        print(np.mean(ranges))
+        print(np.median(ranges))
+    """
+    
     for sample_idx in range(n_samples):
+        autocalibrated_coords = np.array(anchor_coords_list)
 
         for _ in range(MAX_ITERS):
             # save previous anchors coords for termination condition
-            anchors_coords_old = np.copy(anchors_coords_array)
+            anchors_coords_old = np.copy(autocalibrated_coords)
 
             # update anchors coords
             for anchor_idx in range(n_anchors):
-                current_data = data[anchor_idx]
-                #if anchor_id in ['009A', '4984', '2D9C', '4806']: continue
+                ranges = data[anchor_idx]
+                anchor_id = anchor_id_list[anchor_idx]
+                if anchor_id in [''] : continue # avoid anchor_id pose update if position is known
+                anchors_coords = []
+                anchors_distances = []
+                # initial guess (manually)
                 for _anchor_idx in range(n_anchors):
-                    if current_data[sample_idx, _anchor_idx] < 0: # range for anchor has not been received
+                    if ranges[sample_idx, _anchor_idx] < 0.0: # range for anchor has not been received
                         continue
-                    anchors_coords.append(anchors_coords_array[_anchor_idx])
-                    anchors_distances.append(current_data[sample_idx, _anchor_idx])
+                    anchors_coords.append(autocalibrated_coords[_anchor_idx])
+                    anchors_distances.append(ranges[sample_idx, _anchor_idx])
 
-                anchors_coords = np.array(anchors_coords)
-                anchors_distances = np.array(anchors_distances)
-                # update anchor_id coord
-                anchors_coords_array[anchor_idx] = optimizedTagCoords(anchors_coords, anchors_distances)
+                if len(anchors_coords) >= 4:
+                    anchors_coords = np.array(anchors_coords)
+                    anchors_distances = np.array(anchors_distances)
+                    # update anchor_id coord
+                    autocalibrated_coords[anchor_idx] = optimizedTagCoords(anchors_coords, anchors_distances)
 
             # termination condition -> distances between anchors have not been modified significantly
-            if np.abs(np.linalg.norm(normL2(anchors_coords_array, anchors_coords_array) - normL2(anchors_coords_old, anchors_coords_old))) < TERMINATION_THRESH:
+            if np.abs(np.linalg.norm(normL2(autocalibrated_coords, autocalibrated_coords) - normL2(anchors_coords_old, anchors_coords_old))) < TERMINATION_THRESH:
                 break
         
         # rotation and translation based on anchor distribution previous knowledge
-        a = anchors_coords_array[0,0] - anchors_coords_array[3,0]
-        b = anchors_coords_array[0,1] - anchors_coords_array[3,1]
+        a = autocalibrated_coords[0,0] - autocalibrated_coords[1,0]
+        b = autocalibrated_coords[0,1] - autocalibrated_coords[1,1]
         theta = np.arctan(a/b)
 
-        anchors_coords = rotate_points(anchors_coords, yaw = theta)
-        anchors_coords -= anchors_coords[0]
+        autocalibrated_coords = rotate_points(autocalibrated_coords, yaw = theta)
+        autocalibrated_coords -= autocalibrated_coords[0]
         
-        while anchors_coords_array[3,0] > 0.00001 or anchors_coords_array[3,1] < 0:
-            anchors_coords = rotate_points(anchors_coords, yaw = np.radians(90))
+        while autocalibrated_coords[1,0] > 0.00001 or autocalibrated_coords[1,1] < 0:
+            autocalibrated_coords = rotate_points(autocalibrated_coords, yaw = np.radians(90))
 
-        for idx in range(n_anchors):
-            plt.scatter(anchors_coords[idx,0], anchors_coords[idx,1], color = 'black')
+        # plot estimated anchor coords
+        for i in range(n_anchors):
+            plt.scatter(autocalibrated_coords[i,0], autocalibrated_coords[i,1], color = 'black')
 
-    anchors_coords_gt = np.array([ [0.0, 0.0, 0.0],
-                                [0.0, 1.2, 0.0],
-                                [0.0, 2.4, 0.0],
-                                [0.0, 3.6, 0.0],
-                                [1.2, 1.2, 0.0],
-                                [1.2, 2.4, 0.0],
-                                [2.4, 0.0, 0.0],
-                                [2.4, 1.2, 0.0],
-                                [2.4, 2.4, 0.0],
-                                [2.4, 3.6, 0.0]])
+    # TODO: read gt from other file
+    anchors_coords_gt = np.array(anchor_coords_list)
 
     for idx in range(n_anchors):
-        plt.scatter(anchors_coords_gt[idx,0], anchors_coords_gt[idx,1], label = anchor_id_list[idx])
+        plt.scatter(anchors_coords_gt[idx,0], anchors_coords_gt[idx,1], s = 0.5, label = anchor_id_list[idx])
 
     plt.legend(loc='best')
     plt.axis('equal')
