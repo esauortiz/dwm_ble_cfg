@@ -48,12 +48,6 @@ def rotate_points(points, pitch = 0, roll = 0, yaw = 0):
         rotated_points[idx] = [x_r, y_r, z_r]
     return rotated_points
 
-def angle_bet_vectors(vector_1, vector_2):
-    unit_vector_1 = vector_1 / np.linalg.norm(vector_1)
-    unit_vector_2 = vector_2 / np.linalg.norm(vector_2)
-    dot_product = np.dot(unit_vector_1, unit_vector_2)
-    return np.arccos(dot_product)
-
 def normL2(P, Q):
     """ Compute the euclidean distance bet two matrices
     Parameters
