@@ -8,45 +8,15 @@
 @usage: python autocalibration_solver.py 
 """
 
+from locale import nl_langinfo
+from matplotlib import colors
 import matplotlib.pyplot as plt
+from numpy.lib.ufunclike import fix
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 import sys, yaml
 from pathlib import Path
-
-def rotate_points(points, pitch = 0, roll = 0, yaw = 0):
-    n_points = points.shape[0]
-
-    cosa = np.cos(yaw)
-    sina = np.sin(yaw)
-
-    cosb = np.cos(pitch)
-    sinb = np.sin(pitch)
-
-    cosc = np.cos(roll)
-    sinc = np.sin(roll)
-
-    Axx = cosa*cosb
-    Axy = cosa*sinb*sinc - sina*cosc
-    Axz = cosa*sinb*cosc + sina*sinc
-
-    Ayx = sina*cosb
-    Ayy = sina*sinb*sinc + cosa*cosc
-    Ayz = sina*sinb*cosc - cosa*sinc
-
-    Azx = -sinb
-    Azy = cosb*sinc
-    Azz = cosb*cosc
-
-    rotated_points = np.empty(points.shape)
-    for idx in range(n_points):
-        x, y, z = points[idx]
-
-        x_r = Axx*x + Axy*y + Axz*z
-        y_r = Ayx*x + Ayy*y + Ayz*z
-        z_r = Azx*x + Azy*y + Azz*z
-    
-        rotated_points[idx] = [x_r, y_r, z_r]
-    return rotated_points
+from scipy.optimize import fmin
 
 def normL2(P, Q):
     """ Compute the euclidean distance bet two matrices
@@ -83,15 +53,50 @@ def readYaml(file):
         except yaml.YAMLError as exc:
             print(exc)
 
+def costOptimization(anchors_coords, ranges, fixed_anchors):
+    def _my_opt_func(Theta, *args):
+        """optimize target function
+        Theta: (3, N)
+            current array of anchors coordinates (x,y,z)
+        args:
+            ranges: array (N, N) inter anchor ranges (median of n_samples)
+            n_anchors: total number of anchors
+        """
+        ranges_ij, n_anchors, fixed_anchors, Theta_init = args
+        Theta = Theta.reshape(n_anchors, 3)
+        Theta[fixed_anchors] = Theta_init[fixed_anchors]
+        invalid_ranges_mask = ranges < 0
+
+        distances_ij = np.einsum("ijk->ij", (Theta[:, None, :] - Theta) ** 2)
+        mask = distances_ij == 0 # to remove j = i cost
+        cost_ij = (distances_ij - ranges_ij ** 2) ** 2
+        cost_ij[mask] = 0 # remove j = i costs
+        cost_ij[invalid_ranges_mask] = 0 # remove costs computed with invalid ranges
+        return np.sum(np.einsum("ij->i", cost_ij))
+
+    anchors_coords = anchors_coords.T.reshape(-1,3)
+    print(anchors_coords)
+    Theta_init = np.copy(anchors_coords)
+    n_anchors = anchors_coords.shape[0]
+    args = ranges, n_anchors, fixed_anchors, Theta_init
+    
+    print(f'Before optimization: Cost = {_my_opt_func(anchors_coords, *args)}')
+    Theta_opt = fmin(_my_opt_func, anchors_coords, args = args, disp=False)#, xtol = 0.000001, ftol = 0.000001)    
+    print(f'After optimization: Cost = {_my_opt_func(Theta_opt, *args)}')
+    Theta_opt = Theta_opt.reshape(anchors_coords.shape)
+    Theta_opt[fixed_anchors] = Theta_init[fixed_anchors]
+
+    return Theta_opt
+
 def main():
 
     # load nodes configuration label
     try: nodes_configuration_label = sys.argv[1]
     except: nodes_configuration_label = 'default'
 
-    MAX_ITERS = 100
-    TERMINATION_THRESH = 0.1
-    PATH_TO_DATA = '/home/esau/catkin_ws/src/uwb_pkgs/dwm1001_drivers'
+    MAX_ITERS = 2500
+    TERMINATION_THRESH = 0.001
+    PATH_TO_DATA = '/home/esau/catkin_ws/src/uwb_pkgs/dwm1001_drivers/ranging_uart_3D_distribution'
 
     # load anchors cfg
     current_path = Path(__file__).parent.resolve()
@@ -101,34 +106,49 @@ def main():
     # set some node variables
     n_networks = nodes_cfg['n_networks']
     anchor_id_list = [] # single level list
-    anchor_coords_list = []
+    anchor_coords_list = [] # initial guess
+    anchor_coords_gt = []
     for i in range(n_networks):
         network_cfg = nodes_cfg['network' + str(i)]
         n_anchors = network_cfg['n_anchors']
         anchors_in_network_list = [network_cfg['anchor' + str(i) + '_id'] for i in range(n_anchors)]
         anchors_coords_in_network_list = [network_cfg['anchor' + str(i) + '_coordinates'] for i in range(n_anchors)]
+        anchors_coords_gt_in_network_list = [network_cfg['gt']['anchor' + str(i) + '_coordinates'] for i in range(n_anchors)]
         anchor_id_list += anchors_in_network_list
         anchor_coords_list = anchor_coords_list + anchors_coords_in_network_list
+        anchor_coords_gt = anchor_coords_gt + anchors_coords_gt_in_network_list
 
-    # retrieve from list of anchors from nodes cfg
+    # read anchor_data (i.e. (n_samples, n_anchors) ranges array)
     data = []
     for anchor_id in anchor_id_list:
-        anchor_data = np.loadtxt(PATH_TO_DATA + '/' + anchor_id + '_ranging_data.txt')
+        try:
+            anchor_data = np.loadtxt(PATH_TO_DATA + '/' + anchor_id + '_ranging_data.txt')
+            anchor_data = anchor_data.T
+            #anchor_data = np.array([anchor_data[idx] for idx in idxs])
+            anchor_data = anchor_data.T
+            anchor_data = anchor_data[1:] # discard first sample, usually filled with bad lectures (i.e. -1 values)
+            median_list = []
+            for ranges in anchor_data.T:
+                median_list.append(np.median(ranges))
+            anchor_data = np.array(median_list).reshape(1,-1)
+        except:
+            anchor_data = None
         data.append(anchor_data)
     n_samples, n_anchors = data[0].shape
-
-    """
-    for ranges, anchor_id in zip(data[4].T, anchor_id_list):
-        print(anchor_id)
-        ranges = ranges[ranges > 0]
-        if len(ranges) == 0: continue
-        print(np.std(ranges))
-        print(np.mean(ranges))
-        print(np.median(ranges))
-    """
     
+    # plot instance
+    fig = plt.figure()
+    ax = ax = Axes3D(fig)
+    estimated_coords = np.empty((3,n_samples,n_anchors))
+
     for sample_idx in range(n_samples):
-        autocalibrated_coords = np.array(anchor_coords_list)
+        autocalibrated_coords = np.copy(anchor_coords_list)
+        sampled_ranges = []
+
+        for anchor_idx in range(n_anchors):
+            ranges = data[anchor_idx]
+            sampled_ranges.append(ranges[sample_idx])
+        sampled_ranges = np.array(sampled_ranges)
 
         for _ in range(MAX_ITERS):
             # save previous anchors coords for termination condition
@@ -138,7 +158,7 @@ def main():
             for anchor_idx in range(n_anchors):
                 ranges = data[anchor_idx]
                 anchor_id = anchor_id_list[anchor_idx]
-                if anchor_id in [''] : continue # avoid anchor_id pose update if position is known
+                if anchor_id in ['DW009A', 'DW4984', 'DW4848', 'DW47FC'] : continue # avoid anchor_id pcmap = plt.get_cmap('viridis')ose update if position is known
                 anchors_coords = []
                 anchors_distances = []
                 # initial guess (manually)
@@ -153,35 +173,37 @@ def main():
                     anchors_distances = np.array(anchors_distances)
                     # update anchor_id coord
                     autocalibrated_coords[anchor_idx] = optimizedTagCoords(anchors_coords, anchors_distances)
+                    
 
             # termination condition -> distances between anchors have not been modified significantly
             if np.abs(np.linalg.norm(normL2(autocalibrated_coords, autocalibrated_coords) - normL2(anchors_coords_old, anchors_coords_old))) < TERMINATION_THRESH:
                 break
         
-        # rotation and translation based on anchor distribution previous knowledge
-        a = autocalibrated_coords[0,0] - autocalibrated_coords[1,0]
-        b = autocalibrated_coords[0,1] - autocalibrated_coords[1,1]
-        theta = np.arctan(a/b)
+        # save estimated anchor coords
+        estimated_coords[:,sample_idx,:] = autocalibrated_coords.T
 
-        autocalibrated_coords = rotate_points(autocalibrated_coords, yaw = theta)
-        autocalibrated_coords -= autocalibrated_coords[0]
-        
-        while autocalibrated_coords[1,0] > 0.00001 or autocalibrated_coords[1,1] < 0:
-            autocalibrated_coords = rotate_points(autocalibrated_coords, yaw = np.radians(90))
+    # plot gt and estimation
+    cmap = plt.get_cmap('gist_rainbow')
+    my_colors = cmap(np.linspace(0,1,n_anchors))
 
-        # plot estimated anchor coords
-        for i in range(n_anchors):
-            plt.scatter(autocalibrated_coords[i,0], autocalibrated_coords[i,1], color = 'black')
-
-    # TODO: read gt from other file
-    anchors_coords_gt = np.array(anchor_coords_list)
-
+    anchors_coords_gt = np.array(anchor_coords_gt)
+    ax.scatter([],[],[], label = 'estimation (fmin)', marker = 'x', color = 'black')
+    ax.scatter([],[],[], label = 'ground truth', color = 'black')
+    fixed_anchors = np.array([1,0,1,1,0,1,0,0,0,0], dtype=bool)
+    data = np.array(data).reshape(n_anchors, n_anchors)
+    optimizedCoords = costOptimization(estimated_coords, data, fixed_anchors)
     for idx in range(n_anchors):
-        plt.scatter(anchors_coords_gt[idx,0], anchors_coords_gt[idx,1], s = 0.5, label = anchor_id_list[idx])
+        estimated_anchor_coords = estimated_coords[:,:,idx].T
+        centroid = np.mean(estimated_anchor_coords, axis = 0)
+        #ax.scatter(centroid[0], centroid[1], centroid[2], color = my_colors[idx], marker = 'x')
+        ax.scatter(optimizedCoords[idx,0], optimizedCoords[idx,1], optimizedCoords[idx,2], color = my_colors[idx], marker = 'x')
+        ax.scatter(anchors_coords_gt[idx,0], anchors_coords_gt[idx,1], anchors_coords_gt[idx,2], color = my_colors[idx], label = anchor_id_list[idx])
+        print(anchor_id_list[idx], ' pose estimation error: ', float(normL2(np.array([optimizedCoords[idx]]), np.array([anchors_coords_gt[idx]]))))
 
     plt.legend(loc='best')
-    plt.axis('equal')
-    plt.show()    
+    plt.axis('auto')
+    plt.show()   
+
 
 if __name__ == '__main__':
     main()
