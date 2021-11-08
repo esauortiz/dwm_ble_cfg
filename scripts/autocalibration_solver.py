@@ -4,9 +4,9 @@
                 This process takes an initial anchors coords guess as starting point of the iterative
                 optimization.
 @author: Esau Ortiz
-@date: october 2021
+@date: October 2021
 @usage: python autocalibration_solver.py <nodes_cfg_label> <n_samples>
-                <nodes_configuration_label> is a yaml file which includes nets, 
+                <nodes_configuration_label> is a yaml file which includes networks, 
                 tag ids, anchor ids and anchor coords
                 <n_samples> samples to save when retrieving ranges
 """
