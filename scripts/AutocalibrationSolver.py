@@ -4,7 +4,7 @@
                 This process takes an initial anchors coords guess as starting point of the iterative
                 optimization.
 @author: Esau Ortiz
-@date: october 2021
+@date: October 2021
 """
 
 import numpy as np
