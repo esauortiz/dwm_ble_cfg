@@ -162,13 +162,15 @@ class AutocalibrationSolver(object):
         # optimization based on scipy.optimize.fmin
         return AutocalibrationSolver.costOpt(self.autocalibrated_coords, _samples_ik, self.fixed_anchors, self.verbose)
 
-    def estimationError(self, gt, axis = None):
+    def estimationError(self, gt, est = None, axis = None):
         """ Return estimation error computed as euclidean
         distance
         Parameters
         ----------
         gt: (N, 3) array
-            anchor coordinates ground truth
+            ground truth anchor coordinates
+        est (optional): (N, 3) array
+            estimated anchor coordinates
         axis (optional): int
             if axis is provided error in given axis
             is returned
@@ -178,6 +180,8 @@ class AutocalibrationSolver(object):
             euclidean distance between ground truth and 
             estimation
         """
+        if est is not None:
+            self.autocalibrated_coords = est
         if axis is not None:
             est_error = self.autocalibrated_coords - gt
             return est_error[:, axis]

@@ -91,7 +91,7 @@ def main():
     autocalibration_samples, n_samples = getData(PATH_TO_DATA, anchor_id_list, n_samples)
 
     # solve multi-stage procedure for all k samples
-    autocalibration_solver = AutocalibrationSolver(autocalibration_samples, initial_guess, fixed_anchors)
+    autocalibration_solver = AutocalibrationSolver(autocalibration_samples, initial_guess, fixed_anchors, lower_percentile = 0.1, upper_percentile = 0.9)
     """
     # solve stages 1 and 2 for samples' median
     autocalibration_solver.stageOne()
