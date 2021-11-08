@@ -90,24 +90,39 @@ def main():
     # get autocalibration_samples
     autocalibration_samples, n_samples = getData(PATH_TO_DATA, anchor_id_list, n_samples)
 
+    # plot estimation results
+    fig = plt.figure()
+    ax = Axes3D(fig)
+    cmap = plt.get_cmap('gist_rainbow')
+    my_colors = cmap(np.linspace(0,1,n_total_anchors))
+    # legend plot
+    ax.scatter([],[],[], label = 'estimation', marker = 'x', color = 'black')
+    ax.scatter([],[],[], label = 'ground truth', color = 'black')
+
     # solve multi-stage procedure for all k samples
-    autocalibration_solver = AutocalibrationSolver(autocalibration_samples, initial_guess, fixed_anchors, lower_percentile = 0.1, upper_percentile = 0.9)
+    autocalibration_solver = AutocalibrationSolver(autocalibration_samples, initial_guess, fixed_anchors, lower_percentile = 0.45, upper_percentile = 0.55)
     """
     # solve stages 1 and 2 for samples' median
     autocalibration_solver.stageOne()
     autocalibration_solver.stageTwo()
     autocalibrated_coords = np.copy(autocalibration_solver.autocalibrated_coords)    
     """
+    intensities = np.linspace(0,1,n_samples)
+
     # solve stages 1 and 2 for all samples j
     autocalibrated_coords_j = np.empty((n_total_anchors, 3, n_samples), dtype = float)
     for j in range(n_samples):
-        autocalibration_solver.stageOne(sample_idx = j)
+        autocalibration_solver.autocalibrated_coords = np.copy(initial_guess)
+        #autocalibration_solver.stageOne(sample_idx = j)
         autocalibration_solver.stageTwo(sample_idx = j)
         autocalibrated_coords_j[:,:,j] = np.copy(autocalibration_solver.autocalibrated_coords)
         # print progress
-        percentage_completed = "{:.2f}".format(j/n_samples * 100)
+        percentage_completed = "{:.2f}".format((j + 1)/n_samples * 100)
         sys.stdout.write(f'\r {percentage_completed} % Complete')
-        #sys.stdout.flush()
+
+        # print estimation for all samples
+        my_colors[:,3] = intensities[j]
+        ax.scatter(autocalibration_solver.autocalibrated_coords[:,0], autocalibration_solver.autocalibrated_coords[:,1], autocalibration_solver.autocalibrated_coords[:,2], color = my_colors, marker = 'x')
     print('\n')
 
     # results df
@@ -118,15 +133,6 @@ def main():
         'y_error [m]' : [],
         'z_error [m]' :  []
     })
-
-    # plot estimation results
-    fig = plt.figure()
-    ax = Axes3D(fig)
-    cmap = plt.get_cmap('gist_rainbow')
-    my_colors = cmap(np.linspace(0,1,n_total_anchors))
-    # legend plot
-    ax.scatter([],[],[], label = 'estimation (fmin)', marker = 'x', color = 'black')
-    ax.scatter([],[],[], label = 'ground truth', color = 'black')
 
     for i in range(n_total_anchors):
         # solving stages 1 and 2 for all samples j therefore there will be j coord estimations for each anchor
