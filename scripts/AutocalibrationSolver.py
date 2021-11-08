@@ -128,6 +128,7 @@ class AutocalibrationSolver(object):
             if np.abs(np.linalg.norm(self.autocalibrated_coords - anchors_coords_old)) < self.convergence_thresh:
                 break
 
+
     def stageTwo(self, sample_idx = None):
         """ Stage 2 of multi-stage procedure
         Parameters
@@ -160,7 +161,7 @@ class AutocalibrationSolver(object):
         #_samples_ik = self.preconditioner(_samples_ik)
 
         # optimization based on scipy.optimize.fmin
-        return AutocalibrationSolver.costOpt(self.autocalibrated_coords, _samples_ik, self.fixed_anchors, self.verbose)
+        self.autocalibrated_coords =  AutocalibrationSolver.costOpt(self.autocalibrated_coords, _samples_ik, self.fixed_anchors, self.verbose)
 
     def estimationError(self, gt, est = None, axis = None):
         """ Return estimation error computed as euclidean
@@ -254,10 +255,9 @@ class AutocalibrationSolver(object):
             # remove j = i costs
             cost_ij[distances_ij == 0] = 0
             # remove costs computed with invalid ranges (i.e. ranges < 0)
-            cost_ij[ranges_ik < 0] = 0
+            cost_ij[ranges_ik < 0.0] = 0
             return np.sum(np.einsum("ij->i", cost_ij))
 
-        anchors_coords = anchors_coords.T.reshape(-1,3)
         Theta_init = np.copy(anchors_coords)
         n_anchors = anchors_coords.shape[0]
         args = ranges_ik, n_anchors, fixed_anchors, Theta_init
