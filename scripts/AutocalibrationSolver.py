@@ -56,7 +56,39 @@ class AutocalibrationSolver(object):
         self.upper_percentile = upper_percentile
         self.verbose = verbose
 
+    def preconditioner(self, samples_ik):
+        """ Turn samples_ik into a symmetric matrix
+            as ideally it should be
+        Parameters
+        ----------
+        samples_ik: (N, N) array
+            inter-anchors ranges array
+        Returns
+        -------
+        samples_ik: (N, N) array
+            symmetric inter-anchors ranges array
+        """
+        n_anchors, _ = samples_ik.shape
+        for i in range(n_anchors):
+            for k in range(n_anchors):
+                _range = samples_ik[i,k]
+                _sym_range = samples_ik[k,i]
+                # complete unread range if one of the symmetric ranges has been measured
+                if _range < 0.0 and _sym_range > 0.0: samples_ik[i,k] = samples_ik[k,i]
+                elif _range > 0.0 and _sym_range < 0.0: samples_ik[k,i] = samples_ik[i,k]
+                # average if both symmetric ranges are different (actually it if performed always leaving same range if both are equal)
+                samples_ik[i,k] = samples_ik[k, i] = np.mean((samples_ik[i,k], samples_ik[k,i]))
+
+        return samples_ik
+
     def stageOne(self, sample_idx = None):
+        """ Stage 1 of multi-stage procedure
+        Parameters
+        ----------
+        sample_idx (option): int
+            sample index for which the stage 1 is performed
+            if it is not provided the median will be computed
+        """
         n_anchors, _, _ = self.samples_ijk.shape
         # starting point is initial guess
         self.autocalibrated_coords = np.copy(self.initial_guess)
@@ -71,6 +103,8 @@ class AutocalibrationSolver(object):
                     else: samples_ik[i,k] = -1.0
         else: 
             samples_ik = np.copy(self.samples_ijk[:,sample_idx,:])
+
+        #samples_ik = self.preconditioner(samples_ik)
 
         for _ in range(self.max_iters):
             # save previous anchors coords for termination condition
@@ -104,6 +138,13 @@ class AutocalibrationSolver(object):
                 break
 
     def stageTwo(self, sample_idx = None):
+        """ Stage 2 of multi-stage procedure
+        Parameters
+        ----------
+        sample_idx (option): int
+            sample index for which the stage 2 is performed
+            if it is not provided the median will be computed
+        """
         n_anchors, _, _ = self.samples_ijk.shape
         # if sample_idx is provided stageOne is performed for that index and for the median otherwise
         if sample_idx is None: 
@@ -124,6 +165,8 @@ class AutocalibrationSolver(object):
             mask = mask1 & mask2
             _samples_ik = -np.ones(samples_ik.shape)
             _samples_ik[mask] = samples_ik[mask]
+
+        #_samples_ik = self.preconditioner(_samples_ik)
 
         # optimization based on scipy.optimize.fmin
         return AutocalibrationSolver.costOpt(self.autocalibrated_coords, _samples_ik, self.fixed_anchors, self.verbose)
