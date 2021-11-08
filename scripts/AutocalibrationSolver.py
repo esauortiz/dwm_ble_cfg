@@ -81,8 +81,6 @@ class AutocalibrationSolver(object):
             if it is not provided the median will be computed
         """
         n_anchors, _, _ = self.samples_ijk.shape
-        # starting point is initial guess
-        self.autocalibrated_coords = np.copy(self.initial_guess)
         # if sample_idx is provided stageOne is performed for that index and for the median otherwise
         if sample_idx is None: 
             # compute median (n_anchors, n_anchors) array discarding bad ranges (i.e. range = -1.0)
@@ -99,7 +97,7 @@ class AutocalibrationSolver(object):
 
         for _ in range(self.max_iters):
             # save previous anchors coords for termination condition
-            anchors_coords_old = np.copy(self.autocalibrated_coords)
+            autocalibrated_coords_old = np.copy(self.autocalibrated_coords)
 
             # update anchors coords
             for i in range(n_anchors):
@@ -121,11 +119,11 @@ class AutocalibrationSolver(object):
             # termination criterion -> distances between anchors have not been modified significantly
             """
             inter_anchor_distances = np.sqrt(np.einsum("ijk->ij", (self.autocalibrated_coords[:, None, :] - self.autocalibrated_coords) ** 2))
-            inter_anchor_distances_old = np.sqrt(np.einsum("ijk->ij", (anchors_coords_old[:, None, :] - anchors_coords_old) ** 2))
+            inter_anchor_distances_old = np.sqrt(np.einsum("ijk->ij", (autocalibrated_coords_old[:, None, :] - autocalibrated_coords_old) ** 2))
             if np.abs(np.linalg.norm(inter_anchor_distances - inter_anchor_distances_old)) < self.convergence_thresh:
             """
             # termination criterion -> autocalibrated coords have not been modified significantly
-            if np.abs(np.linalg.norm(self.autocalibrated_coords - anchors_coords_old)) < self.convergence_thresh:
+            if np.abs(np.linalg.norm(self.autocalibrated_coords - autocalibrated_coords_old)) < self.convergence_thresh:
                 break
 
 
@@ -140,7 +138,7 @@ class AutocalibrationSolver(object):
         n_anchors, _, _ = self.samples_ijk.shape
         # if sample_idx is provided stageOne is performed for that index and for the median otherwise
         if sample_idx is None: 
-            # compute median (n_anchors, n_anchors) array discarding bad ranges (i.e. range = -1.0)
+            # compute median (n_anchors, n_anchors) array not taking into account bad ranges (i.e. range = -1.0)
             _samples_ik = np.empty((n_anchors, n_anchors), dtype = float)
             for i in range(n_anchors):
                 for k in range(n_anchors):
@@ -148,17 +146,22 @@ class AutocalibrationSolver(object):
                     if samples.shape[0] > 0: _samples_ik[i,k] = np.median(samples)
                     else: _samples_ik[i,k] = -1.0
         else:  
-            samples_ik = np.copy(self.samples_ijk[:,sample_idx,:])        
-            # filter samples that are considered bad (outside percentiles limits)
-            lower_bounds = np.percentile(self.samples_ijk, self.lower_percentile, axis = 1)
-            upper_bounds = np.percentile(self.samples_ijk, self.upper_percentile, axis = 1)
+            samples_ik = np.copy(self.samples_ijk[:,sample_idx,:])
+            # build upper_bounds and lower_bounds matrices
+            upper_bounds = -np.ones((samples_ik.shape), dtype = float)
+            lower_bounds = -np.ones((samples_ik.shape), dtype = float)
+            for i in range(n_anchors):
+                for k in range(n_anchors):
+                    samples = self.samples_ijk[i,:,k][self.samples_ijk[i,:,k] > 0]
+                    if samples.shape[0] > 0:
+                        lower_bounds[i, k] = np.percentile(samples, self.lower_percentile)
+                        upper_bounds[i, k] = np.percentile(samples, self.upper_percentile)
             mask1 = samples_ik <= upper_bounds
             mask2 = samples_ik >= lower_bounds
             mask = mask1 & mask2
+            # filter ranges outside limits
             _samples_ik = -np.ones(samples_ik.shape)
             _samples_ik[mask] = samples_ik[mask]
-
-        #_samples_ik = self.preconditioner(_samples_ik)
 
         # optimization based on scipy.optimize.fmin
         self.autocalibrated_coords =  AutocalibrationSolver.costOpt(self.autocalibrated_coords, _samples_ik, self.fixed_anchors, self.verbose)
