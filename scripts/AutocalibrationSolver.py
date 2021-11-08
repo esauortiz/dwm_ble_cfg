@@ -8,16 +8,7 @@
 """
 
 import numpy as np
-import sys, yaml
-from pathlib import Path
 from scipy.optimize import fmin
-
-def readYaml(file):
-    with open(file, 'r') as stream:
-        try:
-            return yaml.safe_load(stream)
-        except yaml.YAMLError as exc:
-            print(exc)
 
 class AutocalibrationSolver(object):
     def __init__(self, autocalibration_samples, initial_guess, fixed_anchors, max_iters = 1500, convergence_thresh = 0.01, LSq_min_anchors = 4, lower_percentile = 0.25, upper_percentile = 0.75, verbose = False):
