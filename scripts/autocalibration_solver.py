@@ -121,7 +121,7 @@ def main():
     autocalibrated_coords_stage_one = np.copy(autocalibration_solver.autocalibrated_coords)    
     autocalibration_solver.stageTwo()
     autocalibrated_coords = np.copy(autocalibration_solver.autocalibrated_coords)
-    np.savetxt('/home/esau/Downloads/tmp/UWBiekf/datasets/lab_cruz_1/est_landmarks.txt', autocalibrated_coords)  
+
     """
     # solve stages 1 and 2 for all samples j
     autocalibrated_coords_j = np.empty((n_total_anchors, 3, n_samples), dtype = float)
