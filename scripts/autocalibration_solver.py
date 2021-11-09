@@ -59,7 +59,7 @@ def main():
     current_path = Path(__file__).parent.resolve()
     dwm1001_drivers_path = str(current_path.parent.parent)
     nodes_cfg = readYaml(dwm1001_drivers_path + "/params/nodes_cfg/" + nodes_configuration_label + ".yaml")
-    PATH_TO_DATA = dwm1001_drivers_path + 'autocalibration_datasets/uart/' + nodes_configuration_label
+    PATH_TO_DATA = dwm1001_drivers_path + '/autocalibration_datasets/uart/' + nodes_configuration_label
 
     # set some node configuration variables    
     n_networks = nodes_cfg['n_networks']
