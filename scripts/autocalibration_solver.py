@@ -11,13 +11,14 @@
                 <n_samples> samples to save when retrieving ranges
 """
 
+from yaml.error import Mark
 from mpl_toolkits.mplot3d import Axes3D
 from pathlib import Path
 from AutocalibrationSolver import AutocalibrationSolver
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import sys, yaml
+import sys, yaml, random
 
 def readYaml(file):
     with open(file, 'r') as stream:
@@ -97,24 +98,33 @@ def main():
     my_colors = cmap(np.linspace(0,1,n_total_anchors))
     # legend plot
     ax.scatter([],[],[], label = 'estimation', marker = 'x', color = 'black')
+    ax.scatter([],[],[], label = 'initial_guess', marker = '*', color = 'black')
     ax.scatter([],[],[], label = 'ground truth', color = 'black')
 
     # solve multi-stage procedure for all k samples
-    autocalibration_solver = AutocalibrationSolver(autocalibration_samples, initial_guess, fixed_anchors, lower_percentile = 0.45, upper_percentile = 0.55)
+    autocalibration_solver = AutocalibrationSolver(autocalibration_samples, initial_guess, fixed_anchors, lower_percentile = 0.05, upper_percentile = 0.95)
     """
     # solve stages 1 and 2 for samples' median
     autocalibration_solver.stageOne()
     autocalibration_solver.stageTwo()
     autocalibrated_coords = np.copy(autocalibration_solver.autocalibrated_coords)    
     """
-    intensities = np.linspace(0,1,n_samples)
+    intensities = np.linspace(0,1,n_samples) # color intensities to plot each estimation
+
+    for coords, fixed in zip(initial_guess, fixed_anchors):
+        if fixed: continue
+        for i in range(2): # add initial_error to x and y axis
+            ERROR_MAGNITUDE = 2.0
+            initial_error = float(random.randrange(-1,2)) * ERROR_MAGNITUDE
+            while initial_error == 0.0: initial_error = float(random.randrange(-1,2)) * ERROR_MAGNITUDE
+            coords[i] += float(random.randrange(-1,2)) * initial_error
 
     # solve stages 1 and 2 for all samples j
     autocalibrated_coords_j = np.empty((n_total_anchors, 3, n_samples), dtype = float)
     for j in range(n_samples):
         autocalibration_solver.autocalibrated_coords = np.copy(initial_guess)
-        #autocalibration_solver.stageOne(sample_idx = j)
-        autocalibration_solver.stageTwo(sample_idx = j)
+        autocalibration_solver.stageOne(sample_idx = None)
+        autocalibration_solver.stageTwo(sample_idx = None)
         autocalibrated_coords_j[:,:,j] = np.copy(autocalibration_solver.autocalibrated_coords)
         # print progress
         percentage_completed = "{:.2f}".format((j + 1)/n_samples * 100)
@@ -138,12 +148,11 @@ def main():
         # solving stages 1 and 2 for all samples j therefore there will be j coord estimations for each anchor
         estimated_anchor_coords = autocalibrated_coords_j[i,:,:].T
         centroid = np.mean(estimated_anchor_coords, axis = 0)
-        # solving stages 1 and 2 for samples' median
-        #centroid = autocalibrated_coords[i]
         
         ax.scatter(centroid[0], centroid[1], centroid[2], color = my_colors[i], marker = 'x')
+        ax.scatter(initial_guess[i,0], initial_guess[i,1], initial_guess[i,2], color = my_colors[i], marker = '*')
         ax.scatter(anchor_coords_gt[i,0], anchor_coords_gt[i,1], anchor_coords_gt[i,2], color = my_colors[i], label = anchor_id_list[i])
-
+        
         axis_error = anchor_coords_gt[i] - centroid
         euclidean_error = np.linalg.norm((anchor_coords_gt[i] - centroid))
         row = pd.DataFrame({'anchor_id' : [anchor_id_list[i]],

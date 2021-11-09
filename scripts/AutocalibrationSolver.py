@@ -139,12 +139,11 @@ class AutocalibrationSolver(object):
         # if sample_idx is provided stageOne is performed for that index and for the median otherwise
         if sample_idx is None: 
             # compute median (n_anchors, n_anchors) array not taking into account bad ranges (i.e. range = -1.0)
-            _samples_ik = np.empty((n_anchors, n_anchors), dtype = float)
+            _samples_ik = -np.ones((n_anchors, n_anchors), dtype = float)
             for i in range(n_anchors):
                 for k in range(n_anchors):
                     samples = self.samples_ijk[i,:,k][self.samples_ijk[i,:,k] > 0]
                     if samples.shape[0] > 0: _samples_ik[i,k] = np.median(samples)
-                    else: _samples_ik[i,k] = -1.0
         else:  
             samples_ik = np.copy(self.samples_ijk[:,sample_idx,:])
             # build upper_bounds and lower_bounds matrices
@@ -152,7 +151,7 @@ class AutocalibrationSolver(object):
             lower_bounds = -np.ones((samples_ik.shape), dtype = float)
             for i in range(n_anchors):
                 for k in range(n_anchors):
-                    samples = self.samples_ijk[i,:,k][self.samples_ijk[i,:,k] > 0]
+                    samples = self.samples_ijk[i,:,k][self.samples_ijk[i,:,k] > 0.0]
                     if samples.shape[0] > 0:
                         lower_bounds[i, k] = np.percentile(samples, self.lower_percentile)
                         upper_bounds[i, k] = np.percentile(samples, self.upper_percentile)
