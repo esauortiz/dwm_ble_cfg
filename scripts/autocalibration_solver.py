@@ -38,12 +38,12 @@ def getData(PATH_TO_DATA, anchor_id_list, n_samples):
         number of samples (i.e. number of inter-anchor ranges)
     """
     n_anchors = len(anchor_id_list)
-    n_samples -= 1 # since we discard first sample
+    n_samples -= 50 # since we discard first sample
     autocalibration_samples = np.empty((n_anchors, n_samples, n_anchors))
     for i in range(n_anchors):
         try:
             anchor_data = np.loadtxt(PATH_TO_DATA + '/' + anchor_id_list[i] + '_ranging_data.txt')
-            anchor_data = anchor_data[1:] # discard first sample, usually filled with bad lectures (i.e. -1 values)
+            anchor_data = anchor_data[50:] # discard first sample, usually filled with bad lectures (i.e. -1 values)
         except:
             anchor_data = -np.ones((n_samples, n_anchors))
         autocalibration_samples[i] = anchor_data
@@ -98,27 +98,27 @@ def main():
     my_colors = cmap(np.linspace(0,1,n_total_anchors))
     # legend plot
     ax.scatter([],[],[], label = 'estimation', marker = 'x', color = 'black')
-    ax.scatter([],[],[], label = 'initial_guess', marker = '*', color = 'black')
+    ax.scatter([],[],[], label = 'initial guess', marker = '*', color = 'black')
     ax.scatter([],[],[], label = 'ground truth', color = 'black')
+    intensities = np.linspace(0,1,n_samples) # color intensities to plot each estimation
+
+    # add noise to initial_guess
+    for i, fixed in zip(range(n_total_anchors), fixed_anchors):
+        if fixed: continue
+        for j in range(2): # add initial_error to x and y axis
+            ERROR_MAGNITUDE = 3.0
+            initial_error = float(random.randrange(-1,2)) * ERROR_MAGNITUDE
+            while initial_error == 0.0: initial_error = float(random.randrange(-1,2)) * ERROR_MAGNITUDE
+            initial_guess[i, j] = initial_guess[i, j] + initial_error
 
     # solve multi-stage procedure for all k samples
-    autocalibration_solver = AutocalibrationSolver(autocalibration_samples, initial_guess, fixed_anchors, lower_percentile = 0.05, upper_percentile = 0.95)
-    """
+    autocalibration_solver = AutocalibrationSolver(autocalibration_samples, np.copy(initial_guess), fixed_anchors)
+
     # solve stages 1 and 2 for samples' median
     autocalibration_solver.stageOne()
     autocalibration_solver.stageTwo()
     autocalibrated_coords = np.copy(autocalibration_solver.autocalibrated_coords)    
     """
-    intensities = np.linspace(0,1,n_samples) # color intensities to plot each estimation
-
-    for coords, fixed in zip(initial_guess, fixed_anchors):
-        if fixed: continue
-        for i in range(2): # add initial_error to x and y axis
-            ERROR_MAGNITUDE = 2.0
-            initial_error = float(random.randrange(-1,2)) * ERROR_MAGNITUDE
-            while initial_error == 0.0: initial_error = float(random.randrange(-1,2)) * ERROR_MAGNITUDE
-            coords[i] += float(random.randrange(-1,2)) * initial_error
-
     # solve stages 1 and 2 for all samples j
     autocalibrated_coords_j = np.empty((n_total_anchors, 3, n_samples), dtype = float)
     for j in range(n_samples):
@@ -134,6 +134,7 @@ def main():
         my_colors[:,3] = intensities[j]
         ax.scatter(autocalibration_solver.autocalibrated_coords[:,0], autocalibration_solver.autocalibrated_coords[:,1], autocalibration_solver.autocalibrated_coords[:,2], color = my_colors, marker = 'x')
     print('\n')
+    """
 
     # results df
     main_df = pd.DataFrame({
@@ -146,8 +147,10 @@ def main():
 
     for i in range(n_total_anchors):
         # solving stages 1 and 2 for all samples j therefore there will be j coord estimations for each anchor
-        estimated_anchor_coords = autocalibrated_coords_j[i,:,:].T
-        centroid = np.mean(estimated_anchor_coords, axis = 0)
+        #estimated_anchor_coords = autocalibrated_coords_j[i,:,:].T
+        #centroid = np.mean(estimated_anchor_coords, axis = 0)
+        
+        centroid = autocalibrated_coords[i]
         
         ax.scatter(centroid[0], centroid[1], centroid[2], color = my_colors[i], marker = 'x')
         ax.scatter(initial_guess[i,0], initial_guess[i,1], initial_guess[i,2], color = my_colors[i], marker = '*')

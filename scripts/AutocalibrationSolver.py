@@ -162,6 +162,7 @@ class AutocalibrationSolver(object):
             _samples_ik = -np.ones(samples_ik.shape)
             _samples_ik[mask] = samples_ik[mask]
 
+        #_samples_ik = self.preconditioner(_samples_ik)
         # optimization based on scipy.optimize.fmin
         self.autocalibrated_coords =  AutocalibrationSolver.costOpt(self.autocalibrated_coords, _samples_ik, self.fixed_anchors, self.verbose)
 
