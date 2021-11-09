@@ -54,12 +54,12 @@ def main():
     # load nodes configuration label
     nodes_configuration_label = sys.argv[1]
     n_samples = int(sys.argv[2])
-    PATH_TO_DATA = '/home/esau/catkin_ws/src/uwb_pkgs/dwm1001_drivers/autocalibration_datasets/uart/' + nodes_configuration_label
 
     # load anchors cfg
     current_path = Path(__file__).parent.resolve()
     dwm1001_drivers_path = str(current_path.parent.parent)
     nodes_cfg = readYaml(dwm1001_drivers_path + "/params/nodes_cfg/" + nodes_configuration_label + ".yaml")
+    PATH_TO_DATA = dwm1001_drivers_path + 'autocalibration_datasets/uart/' + nodes_configuration_label
 
     # set some node configuration variables    
     n_networks = nodes_cfg['n_networks']
@@ -96,6 +96,8 @@ def main():
     ax = Axes3D(fig)
     cmap = plt.get_cmap('gist_rainbow')
     my_colors = cmap(np.linspace(0,1,n_total_anchors))
+    my_colors_light = np.copy(my_colors)
+    my_colors_light[:,3] = 0.25 # adjusting transparency
     # legend plot
     ax.scatter([],[],[], label = 'estimation', marker = 'x', color = 'black')
     ax.scatter([],[],[], label = 'initial guess', marker = '*', color = 'black')
@@ -106,7 +108,7 @@ def main():
     for i, fixed in zip(range(n_total_anchors), fixed_anchors):
         if fixed: continue
         for j in range(2): # add initial_error to x and y axis
-            ERROR_MAGNITUDE = 3.0
+            ERROR_MAGNITUDE = 1.0
             initial_error = float(random.randrange(-1,2)) * ERROR_MAGNITUDE
             while initial_error == 0.0: initial_error = float(random.randrange(-1,2)) * ERROR_MAGNITUDE
             initial_guess[i, j] = initial_guess[i, j] + initial_error
@@ -116,8 +118,10 @@ def main():
 
     # solve stages 1 and 2 for samples' median
     autocalibration_solver.stageOne()
+    autocalibrated_coords_stage_one = np.copy(autocalibration_solver.autocalibrated_coords)    
     autocalibration_solver.stageTwo()
-    autocalibrated_coords = np.copy(autocalibration_solver.autocalibrated_coords)    
+    autocalibrated_coords = np.copy(autocalibration_solver.autocalibrated_coords)
+    np.savetxt('/home/esau/Downloads/tmp/UWBiekf/datasets/lab_cruz_1/est_landmarks.txt', autocalibrated_coords)  
     """
     # solve stages 1 and 2 for all samples j
     autocalibrated_coords_j = np.empty((n_total_anchors, 3, n_samples), dtype = float)
@@ -150,10 +154,10 @@ def main():
         #estimated_anchor_coords = autocalibrated_coords_j[i,:,:].T
         #centroid = np.mean(estimated_anchor_coords, axis = 0)
         
-        centroid = autocalibrated_coords[i]
-        
+        centroid = autocalibrated_coords[i]        
         ax.scatter(centroid[0], centroid[1], centroid[2], color = my_colors[i], marker = 'x')
-        ax.scatter(initial_guess[i,0], initial_guess[i,1], initial_guess[i,2], color = my_colors[i], marker = '*')
+
+        ax.scatter(initial_guess[i,0], initial_guess[i,1], initial_guess[i,2], color = my_colors_light[i], marker = '*')
         ax.scatter(anchor_coords_gt[i,0], anchor_coords_gt[i,1], anchor_coords_gt[i,2], color = my_colors[i], label = anchor_id_list[i])
         
         axis_error = anchor_coords_gt[i] - centroid
