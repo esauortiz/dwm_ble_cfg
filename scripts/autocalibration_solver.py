@@ -38,12 +38,13 @@ def getData(PATH_TO_DATA, anchor_id_list, n_samples):
         number of samples (i.e. number of inter-anchor ranges)
     """
     n_anchors = len(anchor_id_list)
-    n_samples -= 50 # since we discard first sample
+    n_discarded_samples = 1
+    n_samples -= n_discarded_samples # since we discard first sample
     autocalibration_samples = np.empty((n_anchors, n_samples, n_anchors))
     for i in range(n_anchors):
         try:
             anchor_data = np.loadtxt(PATH_TO_DATA + '/' + anchor_id_list[i] + '_ranging_data.txt')
-            anchor_data = anchor_data[50:] # discard first sample, usually filled with bad lectures (i.e. -1 values)
+            anchor_data = anchor_data[n_discarded_samples:] # discard first sample, usually filled with bad lectures (i.e. -1 values)
         except:
             anchor_data = -np.ones((n_samples, n_anchors))
         autocalibration_samples[i] = anchor_data
@@ -105,10 +106,10 @@ def main():
     intensities = np.linspace(0,1,n_samples) # color intensities to plot each estimation
 
     # add noise to initial_guess
-    for i, fixed in zip(range(n_total_anchors), fixed_anchors):
-        if fixed: continue
+    for i, is_fixed in zip(range(n_total_anchors), fixed_anchors):
+        if is_fixed: continue
         for j in range(2): # add initial_error to x and y axis
-            ERROR_MAGNITUDE = 1.0
+            ERROR_MAGNITUDE = 2.0
             initial_error = float(random.randrange(-1,2)) * ERROR_MAGNITUDE
             while initial_error == 0.0: initial_error = float(random.randrange(-1,2)) * ERROR_MAGNITUDE
             initial_guess[i, j] = initial_guess[i, j] + initial_error
