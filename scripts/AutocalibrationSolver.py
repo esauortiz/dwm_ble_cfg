@@ -60,6 +60,7 @@ class AutocalibrationSolver(object):
             symmetric inter-anchors ranges array
         """
         n_anchors, _ = samples_ik.shape
+        max_diff = -1
         for i in range(n_anchors):
             for k in range(n_anchors):
                 _range = samples_ik[i,k]
@@ -69,6 +70,8 @@ class AutocalibrationSolver(object):
                 elif _range > 0.0 and _sym_range < 0.0: samples_ik[k,i] = samples_ik[i,k]
                 # average if both symmetric ranges are different (actually it if performed always leaving same range if both are equal)
                 samples_ik[i,k] = samples_ik[k, i] = np.mean((samples_ik[i,k], samples_ik[k,i]))
+                diff = _range - _sym_range
+                if _range > 0 and _sym_range > 0 and np.abs(diff) > max_diff: max_diff = diff
 
         return samples_ik
 

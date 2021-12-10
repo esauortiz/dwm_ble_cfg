@@ -173,6 +173,8 @@ def main():
         main_df = main_df.append(row)
 
     print(main_df.to_string(index=False))
+    #main_df.to_csv('autocalibration_campus_sport_new.csv')
+    #np.savetxt('landmarks_est.txt', autocalibrated_coords)
     plt.legend(loc='best')
     plt.axis('auto')
     plt.show()   
