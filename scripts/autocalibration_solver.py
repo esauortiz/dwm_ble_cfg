@@ -6,7 +6,7 @@
 @author: Esau Ortiz
 @date: October 2021
 @usage: python autocalibration_solver.py <nodes_cfg_label> <n_samples>
-                <nodes_configuration_label> is a yaml file which includes networks, 
+                <nodes_cfg_label> is a yaml file which includes networks, 
                 tag ids, anchor ids and anchor coords
                 <n_samples> samples to save when retrieving ranges
 """
@@ -53,14 +53,14 @@ def getData(PATH_TO_DATA, anchor_id_list, n_samples):
 def main():
 
     # load nodes configuration label
-    nodes_configuration_label = sys.argv[1]
+    nodes_cfg_label = sys.argv[1]
     n_samples = int(sys.argv[2])
 
     # load anchors cfg
     current_path = Path(__file__).parent.resolve()
     dwm1001_drivers_path = str(current_path.parent.parent)
-    nodes_cfg = readYaml(dwm1001_drivers_path + "/params/nodes_cfg/" + nodes_configuration_label + ".yaml")
-    PATH_TO_DATA = dwm1001_drivers_path + '/autocalibration_datasets/uart/' + nodes_configuration_label
+    nodes_cfg = readYaml(dwm1001_drivers_path + "/params/nodes_cfg/" + nodes_cfg_label + ".yaml")
+    PATH_TO_DATA = dwm1001_drivers_path + '/autocalibration_datasets/uart/' + nodes_cfg_label
 
     # set some node configuration variables    
     n_networks = nodes_cfg['n_networks']
