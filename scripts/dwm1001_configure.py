@@ -64,6 +64,7 @@ if __name__ == "__main__":
     operation_mode_msg = OperationModeMsg()
     network_id_msg = NetworkIdMsg(network_id)
 
+    # setting anchors' configuration
     for i in range(n_anchors):
         anchor_id = nodes_cfg[f'anchor{i}_id']
         try:
@@ -71,6 +72,7 @@ if __name__ == "__main__":
         except KeyError:
             print(f'Anchor {anchor_id} not found')
             continue
+
         if anchor_id in devices_found_id:
             if anchor_id == initiator_id:
                 anchor_operation_mode['initiator_enable'] = 1
@@ -85,13 +87,16 @@ if __name__ == "__main__":
                 continue
             anchor_pose = nodes_cfg[f'anchor{i}_coordinates'] #.split(', ') # not as list
 
+            # set network
             print(f'Setting anchor {anchor_id} network id to {network_id}')
             ble_handler.send(anchor_address, network_id_msg)
 
+            # set operation mode
             print(f'Setting anchor {anchor_id} operation mode' + str_is_initiator + ' ...')
             operation_mode_msg.setData(anchor_operation_mode)
             ble_handler.send(anchor_address, operation_mode_msg)
 
+            # set anchor pose
             print(f'Setting anchor {anchor_id} pose to [X: {anchor_pose[0]} Y: {anchor_pose[1]} Z: {anchor_pose[2]}] ...\n')
             anchor_pose_msg.setData(anchor_pose)
             ble_handler.send(anchor_address, anchor_pose_msg)
@@ -102,17 +107,20 @@ if __name__ == "__main__":
     pprint(anchor_operation_mode)
     print("\n")
 
-    # set tag operation mode
+    # setting tag configuration
     if tag_id in devices_found_id:
         tag_address = devices_found_id[tag_id]
         print(f'Tag {tag_id} found. Do you want to configure it? (y/n)' )
         if input() == 'y':
+            # set operation mode
             print(f'Setting tag {tag_id} operation mode ...')
             operation_mode_msg.setData(tag_operation_mode)
             ble_handler.send(tag_address, operation_mode_msg)
-
+            
             print(f'Found tag {tag_id} mode are set as follows:')
             pprint(tag_operation_mode)
+            # set network could be added
+            # TODO
         print("\n")
     else:
         print(f'Tag {tag_id} not found\n')

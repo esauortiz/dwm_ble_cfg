@@ -34,6 +34,7 @@ def getData(PATH_TO_DATA, anchor_id_list, n_samples):
     PATH_TO_DATA: string
         global path to data
     anchor_id_list: list
+        list of anchor identifiers
     n_samples: int
         number of samples (i.e. number of inter-anchor ranges)
     """
@@ -99,13 +100,14 @@ def main():
     my_colors = cmap(np.linspace(0,1,n_total_anchors))
     my_colors_light = np.copy(my_colors)
     my_colors_light[:,3] = 0.25 # adjusting transparency
+
     # legend plot
     ax.scatter([],[],[], label = 'estimation', marker = 'x', color = 'black')
     ax.scatter([],[],[], label = 'initial guess', marker = '*', color = 'black')
     ax.scatter([],[],[], label = 'ground truth', color = 'black')
     intensities = np.linspace(0,1,n_samples) # color intensities to plot each estimation
 
-    # add noise to initial_guess
+    # add noise to initial_guess (initial_guess is set to anchor_coords_gt and then noise is added to emulate not accurate initial guessing)
     for i, is_fixed in zip(range(n_total_anchors), fixed_anchors):
         if is_fixed: continue
         for j in range(2): # add initial_error to x and y axis
@@ -114,17 +116,20 @@ def main():
             while initial_error == 0.0: initial_error = float(random.randrange(-1,2)) * ERROR_MAGNITUDE
             initial_guess[i, j] = initial_guess[i, j] + initial_error
 
+    # here we compute anchor coordinates based on inter-anchor ranges
     # solve multi-stage procedure for all k samples
     autocalibration_solver = AutocalibrationSolver(autocalibration_samples, np.copy(initial_guess), fixed_anchors)
 
-    # solve stages 1 and 2 for samples' median
+    # solve stages 1 and 2 for samples' median (i.e. for a multiple samples of anchorA-anchorB we use the median value)
     autocalibration_solver.stageOne()
     autocalibrated_coords_stage_one = np.copy(autocalibration_solver.autocalibrated_coords)    
     autocalibration_solver.stageTwo()
     autocalibrated_coords = np.copy(autocalibration_solver.autocalibrated_coords)
 
     """
-    # solve stages 1 and 2 for all samples j
+    # solve stages 1 and 2 for all samples j 
+    # (not using the median value, thus the resulting estimation will be the centroid of all coordinates estimation with each j)
+    # [!] this procedure is discarded since estimations with median value are more accurate
     autocalibrated_coords_j = np.empty((n_total_anchors, 3, n_samples), dtype = float)
     for j in range(n_samples):
         autocalibration_solver.autocalibrated_coords = np.copy(initial_guess)

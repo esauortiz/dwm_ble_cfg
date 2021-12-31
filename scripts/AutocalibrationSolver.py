@@ -119,12 +119,6 @@ class AutocalibrationSolver(object):
                     _ranges = np.array(_ranges)
                     self.autocalibrated_coords[i] = AutocalibrationSolver.coordinatesOpt(_anchors_coords, _ranges)
 
-            # termination criterion -> distances between anchors have not been modified significantly
-            """
-            inter_anchor_distances = np.sqrt(np.einsum("ijk->ij", (self.autocalibrated_coords[:, None, :] - self.autocalibrated_coords) ** 2))
-            inter_anchor_distances_old = np.sqrt(np.einsum("ijk->ij", (autocalibrated_coords_old[:, None, :] - autocalibrated_coords_old) ** 2))
-            if np.abs(np.linalg.norm(inter_anchor_distances - inter_anchor_distances_old)) < self.convergence_thresh:
-            """
             # termination criterion -> autocalibrated coords have not been modified significantly
             if np.abs(np.linalg.norm(self.autocalibrated_coords - autocalibrated_coords_old)) < self.convergence_thresh:
                 break
@@ -213,6 +207,8 @@ class AutocalibrationSolver(object):
             # build B matrix
             B = np.copy(ranges)**2
             B = B[:-1] - B[-1] - np.sum(anchors_coords**2, axis = 1)[:-1] + np.sum(anchors_coords[-1]**2, axis = 0)
+            
+            # solve LS and return
             return np.dot(np.linalg.pinv(A), B)    
 
     @staticmethod
