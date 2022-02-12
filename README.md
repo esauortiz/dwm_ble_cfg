@@ -16,9 +16,9 @@ pip install -r requirements.txt
 ```
 
 ## Usage
-Basic configuration is done with ```dwm_cfg.py``` module. Nodes configuration, anchor operation mode and tag operation mode can be configured in ```.yaml``` files placed in ```params``` folder.
+Basic configuration is done with ```dwm1001_configure.py``` module. Nodes configuration, anchor operation mode and tag operation mode can be configured in ```.yaml``` files placed in ```params``` folder.
 ```bash
-python dwm_cfg.py
+python scripts/dwm1001_configure.py
 ```
 ### Custom configuration
 This example uses already implemented ```PersistedPositionMsg``` class to set anchor position.
